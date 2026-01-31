@@ -5,7 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 
-String serverUri = "http://192.168.1.8:8000";
+String serverUri = "http://192.168.1.13:8000";
 
 
 const String googleMapAPI = "AIzaSyAMamxCz-N-wiGSq4-DfVpD9zOpP_GZ_9o";
@@ -16,7 +16,7 @@ const String mapboxAPI = "pk.eyJ1IjoidmluY2VudGplcnJ5anVhbmljbyIsImEiOiJjbWlyanl
 
 Position? currentPosition;
 
-String selectedVehicle = "Motorcycle";
+String selectedVehicle = "";
 
 int sensorHeight = 200;
 

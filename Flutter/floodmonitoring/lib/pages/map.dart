@@ -11,6 +11,7 @@ import 'package:floodmonitoring/utils/style.dart';
 import 'package:floodmonitoring/widgets/loadscreen_lottie_popup.dart';
 import 'package:floodmonitoring/widgets/map_settings_popup.dart';
 import 'package:floodmonitoring/widgets/search_popup.dart';
+import 'package:floodmonitoring/widgets/toast.dart';
 import 'package:floodmonitoring/widgets/vehicle_info_popup.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -95,6 +96,8 @@ class _MapScreenState extends State<MapScreen> {
 
   int fetchIntervalMinutes = 1;
   int _secondsCounter = 0;
+
+  String tempSelectedVehicle = "";
 
   @override
   void initState() {
@@ -613,7 +616,7 @@ class _MapScreenState extends State<MapScreen> {
   void _onMapTap(LatLng position) async {
 
     if (selectedVehicle.isEmpty || showMainSheet) {
-      print("No vehicle selected. Tap ignored.");
+      showSelectVehicleToast(context);
       return;
     }
 
@@ -882,95 +885,7 @@ class _MapScreenState extends State<MapScreen> {
 
 
 
-///Remove
-  void showVehicleModal() {
-    showDialog(
-      context: context,
-      barrierDismissible: false, // still prevents tapping outside
-      builder: (context) {
-        return WillPopScope(
-          onWillPop: () async => false, // prevent back button
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-            child: StatefulBuilder(
-              builder: (context, setState) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 10,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        "Which vehicle will you use?",
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        "Select a vehicle from the options below before continuing.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 14, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 20),
 
-                      // Vehicle options
-                      vehicleTile("Motorcycle", "assets/images/icons/motorcycle.png", setState),
-                      const SizedBox(height: 10),
-                      vehicleTile("Car", "assets/images/icons/car.png", setState),
-                      const SizedBox(height: 10),
-                      vehicleTile("Truck", "assets/images/icons/truck.png", setState),
-
-                      const SizedBox(height: 20),
-
-                      // Confirm button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: color1,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: () {
-                            if (selectedVehicle.isEmpty) {
-                              showVehicleErrorToast(context);
-                              return;
-                            }
-                            print("Selected Vehicle: $selectedVehicle");
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text(
-                            "CONFIRM",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   Future<void> openPlaceSearch() async {
     final result = await Navigator.push(
@@ -1211,24 +1126,7 @@ class _MapScreenState extends State<MapScreen> {
 
 
 
-  void showNearFloodAlertToast(BuildContext context) {
-    DelightToastBar(
-      builder: (context) => ToastCard(
-        leading: const Icon(Icons.crisis_alert_rounded, color: Colors.white, size: 28),
-        title: const Text(
-          "You are only 120–150 meters from an active flood zone",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        color: Colors.red, // background white
-      ),
-      autoDismiss: true,
-      snackbarDuration: Durations.extralong4,
-    ).show(context);
-  }
+
 
 
 
@@ -1239,7 +1137,7 @@ class _MapScreenState extends State<MapScreen> {
       TileOverlay(
         tileOverlayId: TileOverlayId('xyz_tiles'),
         tileProvider: UrlTileProvider(
-          urlTemplate: '$serverUri/tiles/{z}/{x}/{y}.png',
+          urlTemplate: '$serverUri/media/tiles/{z}/{x}/{y}.png',
         ),
         transparency: 0.3,
       ),
@@ -1405,13 +1303,17 @@ class _MapScreenState extends State<MapScreen> {
 
                 ElevatedButton(
                   onPressed: () {
+                    if (showMainSheet && selectedVehicle.isEmpty) {
+                      showSelectVehicleToast(context);
+                      return;
+                    }
+
                     showMapSettingsPopup(
                       context,
                       initialMapType: mapTypeToString(_currentMapType),
                       initialLayer: showFloodZones ? "Flood GIS" : "None",
                       onConfirm: (selectedMapType, selectedLayer) {
                         setState(() {
-                          // Update MapType
                           switch (selectedMapType) {
                             case "Normal":
                               _currentMapType = MapType.normal;
@@ -1427,7 +1329,6 @@ class _MapScreenState extends State<MapScreen> {
                               break;
                           }
 
-                          // Update layer (example variable)
                           showFloodZones = (selectedLayer == "Flood GIS");
                         });
                       },
@@ -1445,7 +1346,7 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                   child: Center(
                     child: ColorFiltered(
-                      colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                      colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
                       child: Image.asset(
                         'assets/images/icons/layer.png',
                         width: 25,
@@ -1461,25 +1362,20 @@ class _MapScreenState extends State<MapScreen> {
 
           ///Direction Details
           AnimatedPositioned(
-            duration: Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 200),
             curve: Curves.easeOut,
             left: 0,
             right: 0,
-
-            /// Slide up / Slide down
             bottom: showDirectionSheet ? directionDragOffset : -directionSheetHeight,
-
-            /// AUTO HEIGHT (null at first, then assigned after measurement)
             height: directionSheetHeight == 0 ? null : directionSheetHeight,
 
             child: GestureDetector(
               onVerticalDragUpdate: (details) {
                 setState(() {
                   directionDragOffset -= details.delta.dy;
-
-                  if (directionDragOffset > 0) directionDragOffset = 0; // cannot drag above
+                  if (directionDragOffset > 0) directionDragOffset = 0;
                   if (directionDragOffset < -directionSheetHeight) {
-                    directionDragOffset = -directionSheetHeight; // cannot drag below hidden
+                    directionDragOffset = -directionSheetHeight;
                   }
                 });
               },
@@ -1499,17 +1395,18 @@ class _MapScreenState extends State<MapScreen> {
               child: Container(
                 key: directionKey,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                  boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                  color: colorSheet,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black26, blurRadius: 12, offset: Offset(0, -3)),
+                  ],
                 ),
 
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
 
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      /// AUTO-DETECT HEIGHT after widget builds
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         final renderBox = directionKey.currentContext?.findRenderObject() as RenderBox?;
                         if (renderBox != null) {
@@ -1524,106 +1421,118 @@ class _MapScreenState extends State<MapScreen> {
 
                       return Column(
                         mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Drag handle
-                          Container(
-                            width: 40,
-                            height: 5,
-                            margin: const EdgeInsets.only(bottom: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(10),
+
+                          // Drag Handle
+                          Center(
+                            child: Container(
+                              width: 48,
+                              height: 6,
+                              margin: const EdgeInsets.only(bottom: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[400],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
 
-                          // Title
+                          // Header
                           Row(
                             children: [
-                              Icon(Icons.polyline_rounded, size: 32, color: color1_2),
+                              Icon(Icons.alt_route_rounded, size: 28, color: colorPrimary),
                               const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      "Directions",
-                                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text(
+                                    "Directions",
+                                    style: TextStyle(
+                                      fontFamily: 'AvenirNext',
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                      color: colorTextPrimary,
                                     ),
-                                    Text(
-                                      "Select a vehicle and destination",
-                                      style: TextStyle(color: Colors.grey[600]),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    "Choose your start and destination",
+                                    style: TextStyle(
+                                      fontFamily: 'AvenirNext',
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                      color: colorTextSecondary,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
 
-                          const SizedBox(height: 15),
+                          const SizedBox(height: 16),
 
-                          // Current & Destination Box
+                          // Location Card
                           Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                             decoration: BoxDecoration(
-                              color: color1_4,
-                              borderRadius: BorderRadius.circular(12),
+                              color: colorPrimaryLight.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(14),
                             ),
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                /// Current Location
+
+                                // Current Location
                                 InkWell(
-                                  onTap: () {
-                                    print("Current Location clicked");
-                                  },
-                                  child: Container(
+                                  onTap: () {},
+                                  child: SizedBox(
                                     height: 50,
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
                                     child: Row(
                                       children: [
-                                        Image.asset('assets/images/icons/current.png', width: 22, height: 22),
-                                        const SizedBox(width: 10),
-                                        Expanded(
+                                        Icon(Icons.my_location, size: 20, color: colorPrimary),
+                                        const SizedBox(width: 12),
+                                        const Expanded(
                                           child: Text(
                                             "Current Location",
-                                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                                            style: TextStyle(
+                                              fontFamily: 'AvenirNext',
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
                                         ),
-                                        Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                                        Icon(Icons.chevron_right, color: Colors.grey[500]),
                                       ],
                                     ),
                                   ),
                                 ),
 
-                                const Divider(height: 1, color: Colors.grey),
+                                Divider(height: 1, color: Colors.grey.shade300),
 
-                                /// Destination
+                                // Destination
                                 InkWell(
-                                  onTap: () {
-                                    openPlaceSearch();
-                                  },
-                                  child: Container(
+                                  onTap: openPlaceSearch,
+                                  child: SizedBox(
                                     height: 50,
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
                                     child: Row(
                                       children: [
-                                        Image.asset('assets/images/icons/destination.png', width: 22, height: 22),
-                                        const SizedBox(width: 10),
+                                        Icon(Icons.location_on, size: 20, color: colorDanger),
+                                        const SizedBox(width: 12),
                                         Expanded(
                                           child: Text(
-                                            // Show savedPlace name if available, otherwise use coordinates, or default text
                                             savedPlace["name"] != ""
                                                 ? savedPlace["name"]
                                                 : (savedPinPosition != null
                                                 ? "${savedPinPosition!.latitude.toStringAsFixed(5)}, ${savedPinPosition!.longitude.toStringAsFixed(5)}"
                                                 : "Select Destination"),
-                                            style: const TextStyle(fontSize: 16),
-                                            overflow: TextOverflow.ellipsis, // truncate if too long
-                                            maxLines: 1, // ensure only one line
+                                            style: const TextStyle(
+                                              fontFamily: 'AvenirNext',
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                                        Icon(Icons.chevron_right, color: Colors.grey[500]),
                                       ],
                                     ),
                                   ),
@@ -1632,59 +1541,7 @@ class _MapScreenState extends State<MapScreen> {
                             ),
                           ),
 
-                          const SizedBox(height: 10),
-
-                          // Vehicle selection row
-                          Container(
-                            width: double.infinity,
-                            child: Center(
-                              child: Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(40),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.15),
-                                      spreadRadius: 1,
-                                      blurRadius: 3,
-                                      offset: const Offset(0, 0),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    selectVehicle(
-                                      name: 'Motorcycle',
-                                      imagePath: 'assets/images/icons/motorcycle.png',
-                                      onTap: () {
-                                        setState(() => selectedVehicle = 'Motorcycle');
-                                      },
-                                    ),
-                                    const SizedBox(width: 5),
-                                    selectVehicle(
-                                      name: 'Car',
-                                      imagePath: 'assets/images/icons/car.png',
-                                      onTap: () {
-                                        setState(() => selectedVehicle = 'Car');
-                                      },
-                                    ),
-                                    const SizedBox(width: 5),
-                                    selectVehicle(
-                                      name: 'Truck',
-                                      imagePath: 'assets/images/icons/truck.png',
-                                      onTap: () {
-                                        setState(() => selectedVehicle = 'Truck');
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          SizedBox(height: 50), // extra spacing same as your Sensor sheet
+                          const SizedBox(height: 30),
                         ],
                       );
                     },
@@ -1708,7 +1565,6 @@ class _MapScreenState extends State<MapScreen> {
                   sensorSettingsDragOffset -= details.delta.dy;
 
                   if (sensorSettingsDragOffset > 0) sensorSettingsDragOffset = 0;
-
                   if (sensorSettingsDragOffset < -sensorSettingsSheetHeight) {
                     sensorSettingsDragOffset = -sensorSettingsSheetHeight;
                   }
@@ -1730,11 +1586,13 @@ class _MapScreenState extends State<MapScreen> {
                 key: sensorSettingsKey,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black26, blurRadius: 12, offset: const Offset(0, -3)),
+                  ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1753,38 +1611,45 @@ class _MapScreenState extends State<MapScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           // Drag handle
-                          Container(
-                            width: 40,
-                            height: 5,
-                            margin: const EdgeInsets.only(bottom: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(10),
+                          Center(
+                            child: Container(
+                              width: 48,
+                              height: 6,
+                              margin: const EdgeInsets.only(bottom: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
 
+                          // Header
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.settings, size: 32, color: color1_2),
-                              const SizedBox(width: 10),
+                              Icon(Icons.settings_rounded, size: 32, color: colorPrimary),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
+                                  children: const [
+                                    Text(
                                       "Sensor Settings",
                                       style: TextStyle(
                                         fontFamily: 'AvenirNext',
                                         fontSize: 20,
-                                        fontWeight: FontWeight.bold,
+                                        fontWeight: FontWeight.w700,
+                                        color: colorTextPrimary,
                                       ),
                                     ),
+                                    SizedBox(height: 2),
                                     Text(
                                       "Control sensor display options",
                                       style: TextStyle(
                                         fontFamily: 'AvenirNext',
-                                        color: Colors.grey[600],
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w400,
+                                        color: colorTextSecondary,
                                       ),
                                     ),
                                   ],
@@ -1793,54 +1658,44 @@ class _MapScreenState extends State<MapScreen> {
                             ],
                           ),
 
-                          const SizedBox(height: 15),
+                          const SizedBox(height: 20),
 
-                          _sensorToggle(
+                          // Sensor Toggles
+                          _sensorToggleCard(
                             title: 'Show All Sensors',
                             description: 'Display all sensors on the map',
                             value: showAllSensors,
                             onChanged: (val) {
-                              setState(() {
-                                showAllSensors = val;
-                              });
+                              setState(() => showAllSensors = val);
                               _refreshSensorMarkers();
                             },
                           ),
 
-                          _sensorToggle(
+                          _sensorToggleCard(
                             title: 'Show Sensor Range / Coverage',
                             description: 'Display sensor coverage area',
                             value: showSensorCoverage,
-                            onChanged: (val) {
-                              setState(() {
-                                showSensorCoverage = val;
-                              });
-                            },
+                            onChanged: (val) => setState(() => showSensorCoverage = val),
                           ),
 
-                          _sensorToggle(
+                          _sensorToggleCard(
                             title: 'Alerted / Critical Sensors Only',
                             description: 'Show only sensors with alerts',
                             value: showCriticalSensors,
-                            onChanged: (val) {
-                              setState(() {
-                                showCriticalSensors = val;
-                              });
-                            },
+                            onChanged: (val) => setState(() => showCriticalSensors = val),
                           ),
 
-                          _sensorToggle(
+                          _sensorToggleCard(
                             title: 'Sensor Labels',
                             description: 'Show sensor names or IDs on the map',
                             value: showSensorLabels,
                             onChanged: (val) {
-                              setState(() {
-                                showSensorLabels = val;
-                              });
+                              setState(() => showSensorLabels = val);
                               _refreshSensorMarkers();
                             },
                           ),
-                          const SizedBox(height: 50),
+
+                          const SizedBox(height: 40),
                         ],
                       );
                     },
@@ -1857,29 +1712,22 @@ class _MapScreenState extends State<MapScreen> {
             left: 0,
             right: 0,
             bottom: showSensorSheet ? sensorDragOffset : -sensorSheetHeight,
-
-            // AUTO HEIGHT (same logic as Settings)
             height: sensorSheetHeight == 0 ? null : sensorSheetHeight,
-
             child: GestureDetector(
               onVerticalDragUpdate: (details) {
                 setState(() {
                   sensorDragOffset -= details.delta.dy;
-
                   if (sensorDragOffset > 0) sensorDragOffset = 0;
-
                   if (sensorDragOffset < -sensorSheetHeight) {
                     sensorDragOffset = -sensorSheetHeight;
                   }
                 });
               },
-
               onVerticalDragEnd: (details) {
                 if (sensorDragOffset < -sensorSheetHeight / 2) {
                   setState(() {
                     showSensorSheet = false;
                     sensorDragOffset = 0;
-
                     // Remove sensor circles when closing
                     _circles.removeWhere((c) => c.circleId.value.startsWith('sensor'));
                   });
@@ -1889,33 +1737,28 @@ class _MapScreenState extends State<MapScreen> {
                   });
                 }
               },
-
               child: Container(
                 key: sensorKey,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                  boxShadow: [
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  boxShadow: const [
                     BoxShadow(
                       color: Colors.black26,
-                      blurRadius: 10,
-                      offset: Offset(0, -2),
+                      blurRadius: 12,
+                      offset: Offset(0, -4),
                     ),
                   ],
                 ),
-
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      // AUTO-DETECT HEIGHT
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         final renderBox =
                         sensorKey.currentContext?.findRenderObject() as RenderBox?;
-
                         if (renderBox != null) {
                           final newHeight = renderBox.size.height;
-
                           if (sensorSheetHeight != newHeight) {
                             setState(() {
                               sensorSheetHeight = newHeight;
@@ -1949,21 +1792,29 @@ class _MapScreenState extends State<MapScreen> {
                           // HEADER
                           Row(
                             children: [
-                              const Icon(Icons.sensors,
-                                  size: 32, color: color1_2),
+                              Icon(Icons.sensors, size: 32, color: color1), // primary theme
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       "Sensor Details",
-                                      style: TextStyle(
-                                          fontSize: 20, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        fontFamily: 'AvenirNext',
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.black87,
+                                      ),
                                     ),
                                     Text(
                                       "Tap for more information",
-                                      style: TextStyle(color: Colors.grey[600]),
+                                      style: TextStyle(
+                                        fontFamily: 'AvenirNext',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey[600],
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -1978,20 +1829,17 @@ class _MapScreenState extends State<MapScreen> {
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(16),
                               boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 6,
-                                  offset: Offset(0, 2),
-                                ),
+                                BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(0, 2)),
                               ],
                             ),
                             child: Column(
                               children: [
                                 _infoRow("Sensor ID", selectedSensorId ?? "-"),
                                 _infoRow("Location", "Ortigas Ave"),
-                                _infoRow("Flood Height", "${data?['floodHeight'] ?? "-"} cm"),
+                                _infoRow(
+                                    "Flood Height", "${data?['floodHeight'] ?? "-"} cm"),
                                 _infoRow("Distance", "${data?['distance'] ?? "-"} cm"),
                                 _statusRow(
                                   "Status",
@@ -2005,30 +1853,12 @@ class _MapScreenState extends State<MapScreen> {
 
                           const SizedBox(height: 20),
 
-                          // BUTTON
-                          Center(
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: color1,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                onPressed: () {
-                                  Navigator.pushNamed(context, '/info');
-                                },
-                                child: const Text(
-                                  "View Full Details",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
+                          // PRIMARY BUTTON (modern, blue theme)
+                          SizedBox(
+                            width: double.infinity,
+                            child: primaryButton(
+                              text: "View Full Details",
+                              onTap: () => Navigator.pushNamed(context, '/info'),
                             ),
                           ),
 
@@ -2049,23 +1879,18 @@ class _MapScreenState extends State<MapScreen> {
             left: 0,
             right: 0,
             bottom: showPinConfirmationSheet ? pinConfirmationDragOffset : -pinConfirmationSheetHeight,
-
-            // AUTO HEIGHT
             height: pinConfirmationSheetHeight == 0 ? null : pinConfirmationSheetHeight,
 
             child: GestureDetector(
               onVerticalDragUpdate: (details) {
                 setState(() {
                   pinConfirmationDragOffset -= details.delta.dy;
-
                   if (pinConfirmationDragOffset > 0) pinConfirmationDragOffset = 0;
-
                   if (pinConfirmationDragOffset < -pinConfirmationSheetHeight) {
                     pinConfirmationDragOffset = -pinConfirmationSheetHeight;
                   }
                 });
               },
-
               onVerticalDragEnd: (details) {
                 if (pinConfirmationDragOffset < -pinConfirmationSheetHeight / 2) {
                   setState(() {
@@ -2088,8 +1913,8 @@ class _MapScreenState extends State<MapScreen> {
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black26,
-                      blurRadius: 10,
-                      offset: Offset(0, -2),
+                      blurRadius: 12,
+                      offset: Offset(0, -3),
                     ),
                   ],
                 ),
@@ -2100,12 +1925,9 @@ class _MapScreenState extends State<MapScreen> {
                     builder: (context, constraints) {
                       // AUTO-DETECT HEIGHT
                       WidgetsBinding.instance.addPostFrameCallback((_) {
-                        final renderBox =
-                        pinConfirmKey.currentContext?.findRenderObject() as RenderBox?;
-
+                        final renderBox = pinConfirmKey.currentContext?.findRenderObject() as RenderBox?;
                         if (renderBox != null) {
                           final newHeight = renderBox.size.height;
-
                           if (pinConfirmationSheetHeight != newHeight) {
                             setState(() {
                               pinConfirmationSheetHeight = newHeight;
@@ -2113,11 +1935,6 @@ class _MapScreenState extends State<MapScreen> {
                           }
                         }
                       });
-
-                      final sensor = selectedSensorId != null
-                          ? sensors[selectedSensorId]!
-                          : null;
-                      final data = sensor?['sensorData'];
 
                       return Column(
                         mainAxisSize: MainAxisSize.min,
@@ -2134,26 +1951,33 @@ class _MapScreenState extends State<MapScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 15),
 
-                          // HEADER
+                          const SizedBox(height: 14),
+
+                          // HEADER (style identical to Reroute sheet)
                           Row(
                             children: [
-                              const Icon(Icons.location_pin,
-                                  size: 32, color: color1_2),
+                              const Icon(Icons.location_pin, size: 30, color: Colors.blue),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
+                                  children: const [
+                                    Text(
                                       "Set Pin Location",
                                       style: TextStyle(
-                                          fontSize: 20, fontWeight: FontWeight.bold),
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                     Text(
-                                      "Tap Confirm to set new pin location",
-                                      style: TextStyle(color: Colors.grey[600]),
+                                      "Tap Confirm to set new pin location.",
+                                      style: TextStyle(
+                                        fontFamily: 'AvenirNext',
+                                        fontSize: 13,
+                                        color: Colors.grey, // same as Reroute subtitle
+                                        fontWeight: FontWeight.w400,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -2161,88 +1985,44 @@ class _MapScreenState extends State<MapScreen> {
                             ],
                           ),
 
-                          const SizedBox(height: 15),
+                          const SizedBox(height: 18),
 
-                          // CANCEL & CONFIRM BUTTONS
+                          // ACTION BUTTONS (same as Reroute)
                           Row(
                             children: [
-                              // CANCEL BUTTON
                               Expanded(
-                                child: SizedBox(
-                                  height: 50,
-                                  child: OutlinedButton(
-                                    style: OutlinedButton.styleFrom(
-                                      side: const BorderSide(
-                                          color: color1, width: 2),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    onPressed: () {
-                                      cancelPinSelection();
-                                    },
-                                    child: const Text(
-                                      "CANCEL",
-                                      style: TextStyle(
-                                        color: color1,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
+                                child: secondaryButton(
+                                  text: "IGNORE",
+                                  onTap: () {
+                                    cancelPinSelection();
+                                  },
                                 ),
                               ),
-
                               const SizedBox(width: 12),
-
-                              // CONFIRM BUTTON
                               Expanded(
-                                child: SizedBox(
-                                  height: 50,
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: color1,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        // Remove old saved pin if exists
-                                        if (savedPinMarker != null) {
-                                          _markers.remove(savedPinMarker);
-                                        }
+                                child: primaryButton(
+                                  text: "CONFIRM",
+                                  onTap: () {
+                                    setState(() {
+                                      if (savedPinMarker != null) {
+                                        _markers.remove(savedPinMarker);
+                                      }
 
-                                        // Promote temporary pin → official saved pin
-                                        savedPinMarker = tappedMarker;
-                                        savedPinPosition = tappedPosition;
+                                      savedPinMarker = tappedMarker;
+                                      savedPinPosition = tappedPosition;
+                                      savedPlace = Map.from(currentPlace);
 
-                                        savedPlace = Map.from(currentPlace); // update savedPlace
+                                      tappedMarker = null;
+                                      tappedPosition = null;
+                                      currentPlace = {
+                                        "name": "",
+                                        "location": LatLng(0.0, 0.0),
+                                      };
 
-                                        // Clear temp variables
-                                        tappedMarker = null;
-                                        tappedPosition = null;
-                                        currentPlace = {
-                                          "name": "",
-                                          "location": LatLng(0.0, 0.0),
-                                        };
-
-                                        // Hide confirmation sheet and cleanup
-                                        showPinConfirmationSheet = false;
-
-                                        // Optional: remove sensor circles
-                                        _circles.removeWhere((c) => c.circleId.value.startsWith('sensor'));
-                                      });
-                                    },
-                                    child: const Text(
-                                      "CONFIRM",
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
+                                      showPinConfirmationSheet = false;
+                                      _circles.removeWhere((c) => c.circleId.value.startsWith('sensor'));
+                                    });
+                                  },
                                 ),
                               ),
                             ],
@@ -2258,13 +2038,16 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
 
+
           ///Reroute Confirmation
           AnimatedPositioned(
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOut,
             left: 0,
             right: 0,
-            bottom: showRerouteConfirmationSheet ? rerouteConfirmationDragOffset : -rerouteConfirmationSheetHeight,
+            bottom: showRerouteConfirmationSheet
+                ? rerouteConfirmationDragOffset
+                : -rerouteConfirmationSheetHeight,
 
             // AUTO HEIGHT
             height: rerouteConfirmationSheetHeight == 0 ? null : rerouteConfirmationSheetHeight,
@@ -2275,7 +2058,6 @@ class _MapScreenState extends State<MapScreen> {
                   rerouteConfirmationDragOffset -= details.delta.dy;
 
                   if (rerouteConfirmationDragOffset > 0) rerouteConfirmationDragOffset = 0;
-
                   if (rerouteConfirmationDragOffset < -rerouteConfirmationSheetHeight) {
                     rerouteConfirmationDragOffset = -rerouteConfirmationSheetHeight;
                   }
@@ -2304,8 +2086,8 @@ class _MapScreenState extends State<MapScreen> {
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black26,
-                      blurRadius: 10,
-                      offset: Offset(0, -2),
+                      blurRadius: 12,
+                      offset: Offset(0, -3),
                     ),
                   ],
                 ),
@@ -2318,10 +2100,8 @@ class _MapScreenState extends State<MapScreen> {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         final renderBox =
                         rerouteConfirmKey.currentContext?.findRenderObject() as RenderBox?;
-
                         if (renderBox != null) {
                           final newHeight = renderBox.size.height;
-
                           if (rerouteConfirmationSheetHeight != newHeight) {
                             setState(() {
                               rerouteConfirmationSheetHeight = newHeight;
@@ -2329,11 +2109,6 @@ class _MapScreenState extends State<MapScreen> {
                           }
                         }
                       });
-
-                      final sensor = selectedSensorId != null
-                          ? sensors[selectedSensorId]!
-                          : null;
-                      final data = sensor?['sensorData'];
 
                       return Column(
                         mainAxisSize: MainAxisSize.min,
@@ -2350,27 +2125,31 @@ class _MapScreenState extends State<MapScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 15),
+
+                          const SizedBox(height: 14),
 
                           // HEADER
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.location_pin,
-                                  size: 32, color: color1_2),
+                              Icon(Icons.alt_route_rounded, size: 30, color: color1),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const Text(
-                                      "Route Adjustment", //Set Alternate Route
+                                      "Route Adjustment",
                                       style: TextStyle(
-                                          fontSize: 20, fontWeight: FontWeight.bold),
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                     Text(
-                                      "Confirm to create a detour.", //Tap Confirm to place a pin and create an alternate route.”
-                                      style: TextStyle(color: Colors.grey[600]),
+                                      "Confirm to generate a safer alternate path.",
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey[600],
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -2378,82 +2157,44 @@ class _MapScreenState extends State<MapScreen> {
                             ],
                           ),
 
-                          const SizedBox(height: 15),
+                          const SizedBox(height: 18),
 
-                          // CANCEL & CONFIRM BUTTONS
+                          // ACTION BUTTONS
                           Row(
                             children: [
-                              // CANCEL BUTTON
                               Expanded(
-                                child: SizedBox(
-                                  height: 50,
-                                  child: OutlinedButton(
-                                    style: OutlinedButton.styleFrom(
-                                      side: const BorderSide(
-                                          color: color1, width: 2),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        showRerouteConfirmationSheet = false;
-                                      });
-                                    },
-                                    child: const Text(
-                                      "IGNORE",
-                                      style: TextStyle(
-                                        color: color1,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
+                                child: secondaryButton(
+                                  text: "IGNORE",
+                                  onTap: () {
+                                    setState(() {
+                                      showRerouteConfirmationSheet = false;
+                                    });
+                                  },
                                 ),
                               ),
-
                               const SizedBox(width: 12),
-
-                              // CONFIRM BUTTON
                               Expanded(
-                                child: SizedBox(
-                                  height: 50,
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: color1,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        normalRouting = false;
-                                        showRerouteConfirmationSheet = false;
-                                      });
+                                child: primaryButton(
+                                  text: "REROUTE",
+                                  onTap: () {
+                                    setState(() {
+                                      normalRouting = false;
+                                      showRerouteConfirmationSheet = false;
+                                    });
 
-                                      // 2–3. After UI updates, draw new route
-                                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                                        _drawRoute(
-                                          LatLng(currentPosition!.latitude, currentPosition!.longitude),
-                                          savedPinMarker!.position,
-                                        );
-                                      });
-                                    },
-                                    child: const Text(
-                                      "REROUTE",
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
+                                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                                      _drawRoute(
+                                        LatLng(currentPosition!.latitude, currentPosition!.longitude),
+                                        savedPinMarker!.position,
+                                      );
+                                    });
+                                  },
                                 ),
                               ),
                             ],
                           ),
 
-                          const SizedBox(height: 40), // bottom padding
+                          const SizedBox(height: 40),
                         ],
                       );
                     },
@@ -2546,6 +2287,7 @@ class _MapScreenState extends State<MapScreen> {
                       showRerouteConfirmationSheet = false;
 
                       showMainSheet = true;
+                      tempSelectedVehicle = selectedVehicle;
                     });
                   },
                   child: Container(
@@ -2762,14 +2504,27 @@ class _MapScreenState extends State<MapScreen> {
                                           imagePath: 'assets/images/vehicle/bicycle.png',
                                           highlightColor: Colors.blueAccent,
                                           onTap: () {
-                                            setState(() => selectedVehicle = 'Bicycle');
-                                            VehicleInfoPopup.show(context, "Bicycle", onConfirm: (v) {
-                                              setState(() {
-                                                showMainSheet = false;
-                                                showDirectionSheet = true;
-                                                _goToUser();
-                                              });
+                                            setState(() {
+                                              tempSelectedVehicle = selectedVehicle;
+                                              selectedVehicle = 'Bicycle';
                                             });
+                                            VehicleInfoPopup.show(
+                                              context,
+                                              "Bicycle",
+                                              onConfirm: (v) {
+                                                setState(() {
+                                                  selectedVehicle = 'Bicycle';
+                                                  showMainSheet = false;
+                                                  showDirectionSheet = true;
+                                                  _goToUser();
+                                                });
+                                              },
+                                              onCancel: (v) {
+                                                setState(() {
+                                                  selectedVehicle = tempSelectedVehicle;
+                                                });
+                                              },
+                                            );
                                           },
                                         ),
                                         const SizedBox(width: 16),
@@ -2778,14 +2533,27 @@ class _MapScreenState extends State<MapScreen> {
                                           imagePath: 'assets/images/vehicle/motorcycle.png',
                                           highlightColor: Colors.blueAccent,
                                           onTap: () {
-                                            setState(() => selectedVehicle = 'Motorcycle');
-                                            VehicleInfoPopup.show(context, "Motorcycle", onConfirm: (v) {
-                                              setState(() {
-                                                showMainSheet = false;
-                                                showDirectionSheet = true;
-                                                _goToUser();
-                                              });
+                                            setState(() {
+                                              tempSelectedVehicle = selectedVehicle;
+                                              selectedVehicle = 'Motorcycle';
                                             });
+                                            VehicleInfoPopup.show(
+                                              context,
+                                              "Motorcycle",
+                                              onConfirm: (v) {
+                                                setState(() {
+                                                  selectedVehicle = 'Motorcycle';
+                                                  showMainSheet = false;
+                                                  showDirectionSheet = true;
+                                                  _goToUser();
+                                                });
+                                              },
+                                              onCancel: (v) {
+                                                setState(() {
+                                                  selectedVehicle = tempSelectedVehicle;
+                                                });
+                                              },
+                                            );
                                           },
                                         ),
                                         const SizedBox(width: 16),
@@ -2794,14 +2562,27 @@ class _MapScreenState extends State<MapScreen> {
                                           imagePath: 'assets/images/vehicle/car.png',
                                           highlightColor: Colors.blueAccent,
                                           onTap: () {
-                                            setState(() => selectedVehicle = 'Car');
-                                            VehicleInfoPopup.show(context, "Car", onConfirm: (v) {
-                                              setState(() {
-                                                showMainSheet = false;
-                                                showDirectionSheet = true;
-                                                _goToUser();
-                                              });
+                                            setState(() {
+                                              tempSelectedVehicle = selectedVehicle;
+                                              selectedVehicle = 'Car';
                                             });
+                                            VehicleInfoPopup.show(
+                                              context,
+                                              "Car",
+                                              onConfirm: (v) {
+                                                setState(() {
+                                                  selectedVehicle = 'Car';
+                                                  showMainSheet = false;
+                                                  showDirectionSheet = true;
+                                                  _goToUser();
+                                                });
+                                              },
+                                              onCancel: (v) {
+                                                setState(() {
+                                                  selectedVehicle = tempSelectedVehicle;
+                                                });
+                                              },
+                                            );
                                           },
                                         ),
                                         const SizedBox(width: 16),
@@ -2810,14 +2591,27 @@ class _MapScreenState extends State<MapScreen> {
                                           imagePath: 'assets/images/vehicle/truck.png',
                                           highlightColor: Colors.blueAccent,
                                           onTap: () {
-                                            setState(() => selectedVehicle = 'Truck');
-                                            VehicleInfoPopup.show(context, "Truck", onConfirm: (v) {
-                                              setState(() {
-                                                showMainSheet = false;
-                                                showDirectionSheet = true;
-                                                _goToUser();
-                                              });
+                                            setState(() {
+                                              tempSelectedVehicle = selectedVehicle;
+                                              selectedVehicle = 'Truck';
                                             });
+                                            VehicleInfoPopup.show(
+                                              context,
+                                              "Truck",
+                                              onConfirm: (v) {
+                                                setState(() {
+                                                  selectedVehicle = 'Truck';
+                                                  showMainSheet = false;
+                                                  showDirectionSheet = true;
+                                                  _goToUser();
+                                                });
+                                              },
+                                              onCancel: (v) {
+                                                setState(() {
+                                                  selectedVehicle = tempSelectedVehicle;
+                                                });
+                                              },
+                                            );
                                           },
                                         ),
                                       ],
@@ -3066,9 +2860,17 @@ class _MapScreenState extends State<MapScreen> {
             height: 90,
             width: 90,
             decoration: BoxDecoration(
-              color: isSelected ? highlightColor ?? Colors.blueAccent : Colors.blue[50],
+              color: Colors.blue[50],
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: isSelected ? Colors.blue : Colors.transparent, width: 2),
+              gradient: isSelected ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.blueAccent.shade400,
+                  Colors.lightBlue.shade300,
+                ],
+              ) : null,
             ),
             child: Image.asset(
               imagePath,
@@ -3099,7 +2901,7 @@ class _MapScreenState extends State<MapScreen> {
     Color iconColor = color2,
     Color buttonColor = Colors.white,
   }) {
-    bool _isPressed = false;
+    bool isPressed = false;
 
     return Expanded(
       child: InkWell(
@@ -3107,11 +2909,11 @@ class _MapScreenState extends State<MapScreen> {
         highlightColor: Colors.transparent,
         hoverColor: Colors.transparent,
         onTap: () {
-          if (_isPressed) return;
-          _isPressed = true;
+          if (isPressed) return;
+          isPressed = true;
           onTap();
           Future.delayed(const Duration(milliseconds: 350), () {
-            _isPressed = false;
+            isPressed = false;
           });
         },
         child: AnimatedContainer(
@@ -3191,24 +2993,20 @@ class _MapScreenState extends State<MapScreen> {
 
 
 // Reusable widget
-  Widget _sensorToggle({
+  Widget _sensorToggleCard({
     required String title,
     required String description,
     required bool value,
-    required ValueChanged<bool> onChanged,
+    required Function(bool) onChanged,
   }) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white, // solid white background
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 6,
-            offset: Offset(0, 3),
-          ),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(0, 2)),
         ],
       ),
       child: Row(
@@ -3219,27 +3017,24 @@ class _MapScreenState extends State<MapScreen> {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
                 ),
-                SizedBox(height: 4),
                 Text(
                   description,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
+                  style: const TextStyle(
+                    fontFamily: 'AvenirNext',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.black54,
                   ),
                 ),
               ],
             ),
           ),
-
           Switch(
             value: value,
+            activeColor: colorPrimary, // your theme color
             onChanged: onChanged,
-            activeColor: color1,  // your main app primary color
           ),
         ],
       ),
@@ -3250,7 +3045,7 @@ class _MapScreenState extends State<MapScreen> {
 
   Widget _infoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

@@ -5,6 +5,18 @@ import 'package:http/http.dart' as http;
 /// Link: https://interaksyon.philstar.com/trends-spotlights/2024/09/04/282826/mmda-flood-gauge-system-travelers-motorists/amp/
 final List<Map<String, dynamic>> vehicleFloodThresholds = [
   {
+    "vehicle": "",
+    "safeRange_cm": [0.0, 20.0],
+    "warningRange_cm": [20.1, 42.0],
+    "dangerRange_cm": [42.1, double.infinity],
+  },
+  {
+    "vehicle": "Bicycle",
+    "safeRange_cm": [0.0, 10.0],
+    "warningRange_cm": [10.1, 30.0],
+    "dangerRange_cm": [30.1, double.infinity],
+  },
+  {
     "vehicle": "Motorcycle",
     "safeRange_cm": [0.0, 20.0],
     "warningRange_cm": [20.1, 50.0],
@@ -21,12 +33,6 @@ final List<Map<String, dynamic>> vehicleFloodThresholds = [
     "safeRange_cm": [0.0, 40.0],
     "warningRange_cm": [40.1, 60.0],
     "dangerRange_cm": [60.1, double.infinity],
-  },
-  {
-    "vehicle": "Bicycle",
-    "safeRange_cm": [0.0, 10.0],
-    "warningRange_cm": [10.1, 30.0],
-    "dangerRange_cm": [30.1, double.infinity],
   },
 ];
 

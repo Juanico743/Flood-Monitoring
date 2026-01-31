@@ -81,7 +81,7 @@ flutter:
     - assets/images/3d-images/
     - assets/images/vehicle/
     - assets/images/splash/
-    - assets/tiles/
+    - assets/images/layers/
     - assets/lottie/
 
   # An image asset can refer to one or more resolution-specific "variants", see

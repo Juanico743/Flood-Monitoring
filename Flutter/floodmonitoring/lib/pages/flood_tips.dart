@@ -1,5 +1,6 @@
 import 'package:floodmonitoring/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class FloodTips extends StatefulWidget {
   const FloodTips({super.key});
@@ -15,40 +16,38 @@ class _FloodTipsState extends State<FloodTips> {
 
   final Map<String, String> vehicleTips = {
     'Bicycle': """
-Bicycles are extremely vulnerable in flooded areas. Even shallow water can cause loss of balance or slipping.  
+Bicycles lack stability in water. Even 10cm of moving water can wash a cyclist away, and submerged hazards are invisible.
 
-• Avoid riding through water whenever possible.  
-• Walk your bike through water if necessary.  
-• Watch out for potholes, debris, and slippery surfaces.  
-• Wear waterproof and reflective gear for visibility.  
-• If unsure of water depth, wait for it to subside or take an alternate route.  
+• **Check Depth:** If you can't see the bottom, don't ride through. Potholes or missing manhole covers can cause a total wipeout.
+• **Walk It:** If you must cross, dismount and walk your bike on the highest ground (usually the center of the road).
+• **Braking Power:** Rim brakes lose nearly all effectiveness when wet. Pump your brakes frequently after exiting water to dry them.
+• **Avoid Currents:** Never attempt to cross moving water; the lateral pressure on your wheels can easily sweep the bike from under you.
 """,
     'Motorcycle': """
-Motorcycles are extremely vulnerable in flooded areas. Avoid riding through water whenever possible. Even shallow water can cause loss of balance or stall the engine.  
+Motorcycles are at high risk of engine "hydro-lock" and loss of traction. Water in the intake will kill the engine instantly.
 
-• Always keep your engine revs high to prevent water from entering the exhaust.  
-• Avoid sudden acceleration or braking to prevent skidding.  
-• Look out for debris or potholes hidden under water.  
-• Wear waterproof and reflective gear to stay visible.  
-• If water depth is uncertain, wait for it to subside or take alternate routes.  
+• **Steady Revs:** Maintain a steady, slightly high RPM in a low gear. Do not let go of the throttle; back-pressure helps prevent water from entering the exhaust.
+• **The Bow Wave:** Drive slowly to avoid creating a splash that enters your air intake (usually located under the seat or tank).
+• **Center of the Road:** Aim for the crown (middle) of the road where water is shallowest.
+• **Post-Flood Check:** After crossing, "drag" your brakes lightly for a few meters to generate heat and dry the pads/discs.
+• **Electrical Risk:** If the water reaches the spark plugs, the bike will stall. If it stalls in water, do NOT try to restart it.
 """,
     'Car': """
-Cars can handle shallow water but still require caution. Driving through deeper water can lead to engine damage or loss of control.  
+Modern cars are vulnerable to electronics failure and engine damage in floods. 30cm of water is enough to float many passenger vehicles.
 
-• Do not drive through water deeper than 15–20 cm.  
-• Drive slowly and steadily; avoid sudden movements.  
-• Keep an emergency kit including flashlight, food, and first-aid in your car.  
-• Avoid flooded underpasses and low-lying areas.  
-• After crossing water, check brakes immediately to ensure they are functioning properly.  
+• **The 15cm Rule:** Avoid driving through water deeper than the center of your wheels.
+• **One-at-a-Time:** Wait for oncoming traffic to pass. Their "bow wave" can push water over your hood and into your engine intake.
+• **Low Gear, High Revs:** In manuals, slip the clutch; in automatics, stay in the lowest gear (L or 1) to keep exhaust pressure up.
+• **Don't Stop:** Maintain a slow, constant speed (3-5 mph). Stopping mid-flood allows water to seep into the cabin and exhaust.
+• **Brake Test:** Once clear, tap your brakes repeatedly to dry them. Wet brakes have significantly longer stopping distances.
 """,
     'Truck': """
-Trucks have higher clearance but are not immune to flood risks. Strong currents can easily sweep even large trucks off the road.  
+While trucks have higher clearance, their large surface area makes them more susceptible to being pushed by strong currents.
 
-• Avoid crossing fast-flowing water or flooded bridges.  
-• Drive in low gear and at low speed to prevent water from entering the engine.  
-• Ensure cargo is secured to avoid shifting loads.  
-• Take alternate elevated routes and avoid congested flooded areas.  
-• Check tire grip and brakes after passing through water.  
+• **Check Air Intakes:** Know where your intake is. Many modern trucks have low-mounted intakes that can suck in water even if the body looks high.
+• **Cargo Stability:** Water can make a truck buoyant. If your trailer is empty, it is much more likely to float or be swept away.
+• **Watch the Wake:** Large tires create significant wakes that can flood smaller vehicles nearby. Be a responsible driver and keep speed at a crawl.
+• **Differential Care:** After deep water crossing, have your differentials and transmission fluids checked; water can seep in through breathers and contaminate the oil.
 """,
   };
 
@@ -163,18 +162,12 @@ Trucks have higher clearance but are not immune to flood risks. Strong currents 
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
+              height: 1.6,
             ),
           ),
           const SizedBox(height: 12),
-          Text(
-            tip,
-            style: const TextStyle(
-              fontFamily: 'AvenirNext',
-              fontSize: 16,
-              height: 1.6,
-              color: Colors.black87,
-            ),
-          ),
+          // Parse **bold**
+          _parseBoldText(tip),
           const SizedBox(height: 20),
           // Illustration
           Container(
@@ -196,11 +189,130 @@ Trucks have higher clearance but are not immune to flood risks. Strong currents 
             style: TextStyle(
               fontFamily: 'AvenirNext',
               fontSize: 16,
-              height: 1.5,
+              height: 1.6,
               color: Colors.black87,
             ),
           ),
+          const SizedBox(height: 16),
+          // ----- Useful Resources -----
+          Text(
+            "Useful Resources:",
+            style: const TextStyle(
+              fontFamily: 'AvenirNext',
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              height: 1.6,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _bulletLink(
+                "Check if your car can handle floods (MMDA Flood Gauge)",
+                "https://www.autodeal.com.ph/articles/car-features/can-your-car-handle-flood-check-mmdas-flood-gauge-first",
+              ),
+              _bulletLink(
+                "MMDA Flood Guide for motorists",
+                "https://philkotse.com/market-news/mmda-flood-guide-11003",
+              ),
+              _bulletLink(
+                "MMDA Flood Gauge System explained",
+                "https://interaksyon.philstar.com/trends-spotlights/2024/09/04/282826/mmda-flood-gauge-system-travelers-motorists/",
+              ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  // ----- PARSE **bold** -----
+  Widget _parseBoldText(String text) {
+    List<TextSpan> spans = [];
+    RegExp exp = RegExp(r'\*\*(.*?)\*\*');
+    int start = 0;
+
+    for (final match in exp.allMatches(text)) {
+      if (match.start > start) {
+        spans.add(TextSpan(
+          text: text.substring(start, match.start),
+          style: const TextStyle(
+            fontFamily: 'AvenirNext',
+            fontSize: 16,
+            height: 1.6,
+            color: Colors.black87,
+          ),
+        ));
+      }
+
+      spans.add(TextSpan(
+        text: match.group(1),
+        style: const TextStyle(
+          fontFamily: 'AvenirNext',
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          height: 1.6,
+          color: Colors.black87,
+        ),
+      ));
+
+      start = match.end;
+    }
+
+    if (start < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(start),
+        style: const TextStyle(
+          fontFamily: 'AvenirNext',
+          fontSize: 16,
+          height: 1.6,
+          color: Colors.black87,
+        ),
+      ));
+    }
+
+    return RichText(
+      text: TextSpan(children: spans),
+    );
+  }
+
+  // ----- BULLET LINK WIDGET -----
+  Widget _bulletLink(String text, String url) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: InkWell(
+        onTap: () async {
+          if (await canLaunchUrl(Uri.parse(url))) {
+            await launchUrl(Uri.parse(url));
+          }
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "• ",
+              style: TextStyle(
+                fontFamily: 'AvenirNext',
+                fontSize: 16,
+                height: 1.6,
+              ),
+            ),
+            Expanded(
+              child: Text(
+                text,
+                style: const TextStyle(
+                  fontFamily: 'AvenirNext',
+                  fontSize: 16,
+                  height: 1.6,
+                  color: Colors.blueAccent,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

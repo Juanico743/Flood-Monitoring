@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:floodmonitoring/utils/style.dart';
 
-void showMapSettingsPopup(BuildContext context, {
-  required String initialMapType,
-  required String initialLayer,
-  required Function(String mapType, String layer) onConfirm,
-  bool initialFloodZone = false,
-}) {
+void showMapSettingsPopup(
+    BuildContext context, {
+      required String initialMapType,
+      required String initialLayer,
+      required Function(String mapType, String layer) onConfirm,
+      bool initialFloodZone = false,
+    }) {
   showDialog(
     context: context,
     barrierDismissible: false,
@@ -23,89 +24,133 @@ void showMapSettingsPopup(BuildContext context, {
           child: StatefulBuilder(
             builder: (context, setState) {
               return Container(
-                width: 360,
+                width: 380,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: const [
                     BoxShadow(
                       color: Colors.black26,
-                      blurRadius: 15,
-                      offset: Offset(0, 6),
+                      blurRadius: 20,
+                      offset: Offset(0, 8),
                     ),
                   ],
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    /// HEADER (modernized)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
                       child: Row(
-                        children: const [
-                          Icon(Icons.layers, color: color1),
-                          SizedBox(width: 10),
-                          Text(
-                            "Map Settings",
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.layers_rounded, color: colorPrimary, size: 26),
+                          const SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text(
+                                "Map Appearance",
+                                style: TextStyle(
+                                  fontFamily: 'AvenirNext',
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: colorTextPrimary,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                "Select map style and overlays",
+                                style: TextStyle(
+                                  fontFamily: 'AvenirNext',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                  color: colorTextSecondary,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
 
-                    const Divider(),
+                    // Divider removed
 
+                    /// CONTENT
                     Flexible(
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+                        padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text("Map Type", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 10),
-
+                            _sectionTitle("Map Style"),
                             GridView.count(
                               crossAxisCount: 2,
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              crossAxisSpacing: 14,
-                              mainAxisSpacing: 14,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
                               childAspectRatio: 1.1,
                               children: [
-                                mapOptionCard("Normal", Icons.map, selectedMapType == "Normal",
-                                        () => setState(() => selectedMapType = "Normal")),
-                                mapOptionCard("Satellite", Icons.satellite, selectedMapType == "Satellite",
-                                        () => setState(() => selectedMapType = "Satellite")),
-                                mapOptionCard("Hybrid", Icons.public, selectedMapType == "Hybrid",
-                                        () => setState(() => selectedMapType = "Hybrid")),
-                                mapOptionCard("Terrain", Icons.terrain, selectedMapType == "Terrain",
-                                        () => setState(() => selectedMapType = "Terrain")),
+                                mapImageOption(
+                                  label: "Normal",
+                                  image: "assets/images/layers/normal.png",
+                                  selected: selectedMapType == "Normal",
+                                  onTap: () => setState(() => selectedMapType = "Normal"),
+                                ),
+                                mapImageOption(
+                                  label: "Satellite",
+                                  image: "assets/images/layers/satellite.png",
+                                  selected: selectedMapType == "Satellite",
+                                  onTap: () => setState(() => selectedMapType = "Satellite"),
+                                ),
+                                mapImageOption(
+                                  label: "Hybrid",
+                                  image: "assets/images/layers/hybrid.png",
+                                  selected: selectedMapType == "Hybrid",
+                                  onTap: () => setState(() => selectedMapType = "Hybrid"),
+                                ),
+                                mapImageOption(
+                                  label: "Terrain",
+                                  image: "assets/images/layers/terrain.png",
+                                  selected: selectedMapType == "Terrain",
+                                  onTap: () => setState(() => selectedMapType = "Terrain"),
+                                ),
                               ],
                             ),
-
-                            const SizedBox(height: 18),
-                            const Text("Layers", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 10),
-
+                            const SizedBox(height: 20),
+                            _sectionTitle("Overlays"),
                             GridView.count(
                               crossAxisCount: 2,
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              crossAxisSpacing: 14,
-                              mainAxisSpacing: 14,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
                               childAspectRatio: 1.1,
                               children: [
-                                mapOptionCard("None", Icons.layers_clear, selectedLayer == "None", () {
-                                  setState(() {
-                                    selectedLayer = "None";
-                                    showFloodZones = false;
-                                  });
-                                }),
-                                mapOptionCard("Flood GIS", Icons.water, selectedLayer == "Flood GIS", () {
-                                  setState(() {
-                                    selectedLayer = "Flood GIS";
-                                    showFloodZones = true;
-                                  });
-                                }),
+                                mapImageOption(
+                                  label: "None",
+                                  image: "assets/images/layers/none.png",
+                                  selected: selectedLayer == "None",
+                                  onTap: () {
+                                    setState(() {
+                                      selectedLayer = "None";
+                                      showFloodZones = false;
+                                    });
+                                  },
+                                ),
+                                mapImageOption(
+                                  label: "Flood Zones",
+                                  image: "assets/images/layers/gis.png",
+                                  selected: selectedLayer == "Flood GIS",
+                                  onTap: () {
+                                    setState(() {
+                                      selectedLayer = "Flood GIS";
+                                      showFloodZones = true;
+                                    });
+                                  },
+                                ),
                               ],
                             ),
                           ],
@@ -113,8 +158,9 @@ void showMapSettingsPopup(BuildContext context, {
                       ),
                     ),
 
+                    /// ACTION BUTTONS
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
                       child: Row(
                         children: [
                           Expanded(
@@ -126,7 +172,7 @@ void showMapSettingsPopup(BuildContext context, {
                           const SizedBox(width: 12),
                           Expanded(
                             child: primaryButton(
-                              text: "CONFIRM",
+                              text: "APPLY",
                               onTap: () {
                                 onConfirm(selectedMapType, selectedLayer);
                                 Navigator.pop(context);
@@ -148,37 +194,78 @@ void showMapSettingsPopup(BuildContext context, {
 }
 
 /// =======================
-/// MODERN OPTION CARD
+/// SECTION TITLE
 /// =======================
-Widget mapOptionCard(String name, IconData icon, bool isSelected, VoidCallback onTap) {
+Widget _sectionTitle(String text) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Text(
+      text,
+      style: TextStyle(
+        fontFamily: 'AvenirNext',
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        color: Colors.grey.shade700,
+      ),
+    ),
+  );
+}
+
+/// =======================
+/// IMAGE OPTION CARD
+/// =======================
+Widget mapImageOption({
+  required String label,
+  required String image,
+  required bool selected,
+  required VoidCallback onTap,
+}) {
   return InkWell(
-    borderRadius: BorderRadius.circular(14),
+    borderRadius: BorderRadius.circular(16),
     onTap: onTap,
     child: AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isSelected ? color1.withOpacity(0.12) : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isSelected ? color1 : Colors.grey.shade300,
-          width: isSelected ? 2 : 1,
+          color: selected ? Colors.blue : Colors.transparent,
+          width: 2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: selected ? Colors.blue.withOpacity(0.25) : Colors.black12,
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 32, color: isSelected ? color1 : Colors.black54),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: isSelected ? color1 : Colors.black87,
+          /// IMAGE PREVIEW
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              child: Image.asset(
+                image,
+                fit: BoxFit.cover,
+                width: double.infinity,
+              ),
             ),
           ),
-          if (isSelected)
-            const Icon(Icons.check_circle, size: 16, color: color1),
+
+          /// LABEL
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'AvenirNext',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.blue : Colors.grey.shade800,
+              ),
+            ),
+          ),
         ],
       ),
     ),

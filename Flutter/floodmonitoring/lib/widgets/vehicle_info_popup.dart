@@ -5,19 +5,21 @@ import 'package:flutter/material.dart';
 class VehicleInfoPopup {
   /// Show vehicle info popup
   /// `onConfirm` returns the selected vehicle as String
+  /// `onCancel` behaves exactly the same but fires on cancel
   static void show(
       BuildContext context,
       String vehicleName, {
         Function(String selectedVehicle)? onConfirm,
+        Function(String selectedVehicle)? onCancel,
       }) {
     final data = _vehicleData[vehicleName];
     if (data == null) return;
 
     showDialog(
       context: context,
-      barrierDismissible: false, // cannot tap outside
+      barrierDismissible: false,
       builder: (context) {
-        String selectedVehicle = vehicleName; // default selection
+        String selectedVehicle = vehicleName;
 
         return WillPopScope(
           onWillPop: () async => false,
@@ -44,6 +46,7 @@ class VehicleInfoPopup {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+
                       // TITLE
                       Text(
                         vehicleName,
@@ -52,22 +55,29 @@ class VehicleInfoPopup {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+
                       const SizedBox(height: 12),
 
                       // DESCRIPTION
                       Text(
                         data.description,
-                        style: const TextStyle(fontSize: 14, height: 1.5, color: Colors.black87),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          height: 1.5,
+                          color: Colors.black87,
+                        ),
                       ),
+
                       const SizedBox(height: 20),
 
                       // LEVELS
                       _levelRow("Safe", data.safe, Colors.green),
                       _levelRow("Warning", data.warning, Colors.orange),
                       _levelRow("Danger", data.danger, Colors.red),
+
                       const SizedBox(height: 20),
 
-                      // VEHICLE TYPE SELECTION (if Bicycle)
+                      // VEHICLE TYPE SELECTION (Bicycle only)
                       if (vehicleName == "Bicycle") ...[
                         const Text(
                           "Select Type",
@@ -86,14 +96,18 @@ class VehicleInfoPopup {
                                 child: Container(
                                   height: 42,
                                   decoration: BoxDecoration(
-                                    color: selectedVehicle == "Motorcycle" ? color1 : Colors.grey[200],
+                                    color: selectedVehicle == "Motorcycle"
+                                        ? color1
+                                        : Colors.grey[200],
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Center(
                                     child: Text(
                                       "2 Wheels",
                                       style: TextStyle(
-                                        color: selectedVehicle == "Motorcycle" ? Colors.white : Colors.black87,
+                                        color: selectedVehicle == "Motorcycle"
+                                            ? Colors.white
+                                            : Colors.black87,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -112,14 +126,18 @@ class VehicleInfoPopup {
                                 child: Container(
                                   height: 42,
                                   decoration: BoxDecoration(
-                                    color: selectedVehicle == "Bicycle" ? color1 : Colors.grey[200],
+                                    color: selectedVehicle == "Bicycle"
+                                        ? color1
+                                        : Colors.grey[200],
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Center(
                                     child: Text(
                                       "3 Wheels",
                                       style: TextStyle(
-                                        color: selectedVehicle == "Bicycle" ? Colors.white : Colors.black87,
+                                        color: selectedVehicle == "Bicycle"
+                                            ? Colors.white
+                                            : Colors.black87,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -138,7 +156,12 @@ class VehicleInfoPopup {
                           Expanded(
                             child: secondaryButton(
                               text: "CANCEL",
-                              onTap: () => Navigator.pop(context),
+                              onTap: () {
+                                if (onCancel != null) {
+                                  onCancel(selectedVehicle);
+                                }
+                                Navigator.pop(context);
+                              },
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -146,7 +169,9 @@ class VehicleInfoPopup {
                             child: primaryButton(
                               text: "CONFIRM",
                               onTap: () {
-                                if (onConfirm != null) onConfirm(selectedVehicle);
+                                if (onConfirm != null) {
+                                  onConfirm(selectedVehicle);
+                                }
                                 Navigator.pop(context);
                               },
                             ),

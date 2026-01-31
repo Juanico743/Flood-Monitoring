@@ -27,6 +27,44 @@ const Color color_danger = Color(0xFFF44336);
 
 
 
+
+///New Color
+/// PRIMARY THEME (Modern Blue)
+const Color colorPrimary = Color(0xFF2979FF); // similar to Colors.blueAccent
+const Color colorPrimaryDark = Color(0xFF0D47A1);
+const Color colorPrimaryLight = Color(0xFF82B1FF);
+
+/// BACKGROUNDS
+const Color colorBackground = Color(0xFFF5F9FF); // app background
+const Color colorCard = Colors.white;
+const Color colorSheet = Colors.white;
+
+/// TEXT
+const Color colorTextPrimary = Color(0xFF1F2937); // near black
+const Color colorTextSecondary = Color(0xFF6B7280); // grey
+const Color colorTextOnBlue = Colors.white;
+
+/// ACCENT (for highlights, CTA, buttons)
+const Color colorAccent = Color(0xFF40C4FF); // light blue glow
+
+/// GRADIENT (for your top banner & cards)
+const Color gradientStart = Color(0xFF448AFF); // BlueAccent.shade400
+const Color gradientEnd = Color(0xFF81D4FA);   // LightBlue.shade300
+
+/// STATUS COLORS (keep readable & material-like)
+const Color colorSafe = Color(0xFF4CAF50);
+const Color colorWarning = Color(0xFFFFB300);
+const Color colorDanger = Color(0xFFE53935);
+
+/// ALERT BACKGROUND
+const Color colorAlertBg = Color(0xFFFFEBEE);
+
+/// POLYLINE
+const Color colorPolylineSafe = Color(0xFF00E5FF);
+const Color colorPolylineDanger = Color(0xFFFF5252);
+
+
+
 /// =======================
 /// PRIMARY BUTTON
 /// =======================
