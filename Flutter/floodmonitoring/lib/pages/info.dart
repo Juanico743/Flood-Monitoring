@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:floodmonitoring/services/weather.dart';
+import 'package:floodmonitoring/utils/converters.dart';
 import 'package:flutter/material.dart';
 import 'package:floodmonitoring/services/flood_level.dart';
 import 'package:floodmonitoring/utils/style.dart';
@@ -193,7 +194,10 @@ class _InfoState extends State<Info> {
       title: "Live Measurements",
       child: Column(
         children: [
-          _item("Flood Height", "${sensor['sensorData']['floodHeight']} cm"),
+          _item(
+              "Flood Height",
+              "${UnitConverter.cmToInches((sensor['sensorData']['floodHeight'] as num).toDouble()).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')} in"
+          ),
           _item("Distance to Water", "${sensor['sensorData']['distance']} cm"),
           _item("Flood Status", sensor['sensorData']['status'],
               color: dataStatusColor()), // icon removed

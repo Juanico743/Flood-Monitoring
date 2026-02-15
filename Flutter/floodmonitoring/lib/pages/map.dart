@@ -7,6 +7,7 @@ import 'package:floodmonitoring/services/location.dart';
 import 'package:floodmonitoring/services/polyline.dart';
 import 'package:floodmonitoring/services/url_tile_provider.dart';
 import 'package:floodmonitoring/services/weather.dart';
+import 'package:floodmonitoring/utils/converters.dart';
 import 'package:floodmonitoring/utils/style.dart';
 import 'package:floodmonitoring/widgets/loadscreen_lottie_popup.dart';
 import 'package:floodmonitoring/widgets/map_settings_popup.dart';
@@ -44,31 +45,37 @@ class _MapScreenState extends State<MapScreen> {
 
   CameraPosition? _lastPosition;
 
+  /// Direction Sheet
   bool showDirectionSheet = false;
-  bool showSensorSheet = false;
-  bool showSensorSettingsSheet = false;
-  bool showPinConfirmationSheet = false;
-  bool showRerouteConfirmationSheet = false;
-
   double directionSheetHeight = 0;
-  double sensorSheetHeight = 0;
-  double sensorSettingsSheetHeight = 0;
-  double pinConfirmationSheetHeight = 0;
-  double rerouteConfirmationSheetHeight = 0;
-
   double directionDragOffset = 0;
-  double sensorDragOffset = 0;
-  double sensorSettingsDragOffset = 0;
-  double pinConfirmationDragOffset = 0;
-  double rerouteConfirmationDragOffset = 0;
-
   final GlobalKey directionKey = GlobalKey();
+
+  /// Sensor Sheet
+  bool showSensorSheet = false;
+  double sensorSheetHeight = 0;
+  double sensorDragOffset = 0;
   final GlobalKey sensorKey = GlobalKey();
+
+  /// Sensor Settings Sheet
+  bool showSensorSettingsSheet = false;
+  double sensorSettingsSheetHeight = 0;
+  double sensorSettingsDragOffset = 0;
   final GlobalKey sensorSettingsKey = GlobalKey();
+
+  /// Pin Confirmation Sheet
+  bool showPinConfirmationSheet = false;
+  double pinConfirmationSheetHeight = 0;
+  double pinConfirmationDragOffset = 0;
   final GlobalKey pinConfirmKey = GlobalKey();
+
+  /// Reroute Confirmation Sheet
+  bool showRerouteConfirmationSheet = false;
+  double rerouteConfirmationSheetHeight = 0;
+  double rerouteConfirmationDragOffset = 0;
   final GlobalKey rerouteConfirmKey = GlobalKey();
 
-///New Added
+  /// Main Sheet
   bool showMainSheet = true;
   double mainSheetHeight = 0;
   double mainDragOffset = 0;
@@ -98,6 +105,9 @@ class _MapScreenState extends State<MapScreen> {
   int _secondsCounter = 0;
 
   String tempSelectedVehicle = "";
+
+  LatLng? savedPinPosition;
+  Marker? savedPinMarker;
 
   @override
   void initState() {
@@ -249,6 +259,9 @@ class _MapScreenState extends State<MapScreen> {
 
   void startAlert() {
     if (!nearAlertZone) {
+
+      //print("savedPinPosition: $savedPinPosition");
+
       nearAlertZone = true;
       showNearFloodAlertToast(context);
       Vibration.vibrate(duration: 100, amplitude: 255);
@@ -362,6 +375,16 @@ class _MapScreenState extends State<MapScreen> {
 
   ///Sensor Gets Tapped
   Future<void> _onSensorTap(String id, Map<String, dynamic> sensor) async {
+
+    if (selectedVehicle.isEmpty) {
+      showSelectVehicleToast(context);
+      return;
+    } else {
+      setState(() {
+        showMainSheet = false;
+      });
+    }
+
     final LatLng sensorPos = sensor['position'];
     final LatLng offsetTarget = _offsetPosition(sensorPos, 0.0090);
 
@@ -599,8 +622,7 @@ class _MapScreenState extends State<MapScreen> {
     ).show(context);
   }
 
-  LatLng? savedPinPosition;        // the CURRENT official pin
-  Marker? savedPinMarker;          // marker for the official pin
+
   Map<String, dynamic> savedPlace = {
     "name": "",
     "location": LatLng(0.0, 0.0),
@@ -615,9 +637,13 @@ class _MapScreenState extends State<MapScreen> {
 
   void _onMapTap(LatLng position) async {
 
-    if (selectedVehicle.isEmpty || showMainSheet) {
+    if (selectedVehicle.isEmpty) {
       showSelectVehicleToast(context);
       return;
+    } else {
+      setState(() {
+        showMainSheet = false;
+      });
     }
 
     print("Saved Pin: ${savedPinPosition?.latitude}, ${savedPinPosition?.longitude}");
@@ -628,76 +654,63 @@ class _MapScreenState extends State<MapScreen> {
       'assets/images/selected_location.png',
     );
 
-    setState(() {
-      // Remove previous tapped marker
-      if (tappedMarker != null) _markers.remove(tappedMarker);
+    if (settingPin) {
+      setState(() {
+        // Remove previous tapped marker
+        if (tappedMarker != null) _markers.remove(tappedMarker);
 
-      // Add new tapped marker
-      tappedMarker = Marker(
-        markerId: const MarkerId('tapped_pin'),
-        position: position,
-        icon: pinIcon,
-        anchor: const Offset(0.5, 1.0),
-      );
-      _markers.add(tappedMarker!);
+        // Add new tapped marker
+        tappedMarker = Marker(
+          markerId: const MarkerId('tapped_pin'),
+          position: position,
+          icon: pinIcon,
+          anchor: const Offset(0.5, 1.0),
+        );
+        _markers.add(tappedMarker!);
 
-      // Update currentPlace
-      currentPlace = {
-        "name": "",        // leave empty since user just tapped
-        "location": position,
-      };
-      tappedPosition = position;
+        // Update currentPlace
+        currentPlace = {
+          "name": "",        // leave empty since user just tapped
+          "location": position,
+        };
+        tappedPosition = position;
 
-      // Show confirmation sheet
-      showPinConfirmationSheet = true;
-      showDirectionSheet = false;
-      showSensorSheet = false;
-      showSensorSettingsSheet = false;
-      showRerouteConfirmationSheet = false;
-    });
+        // Show confirmation sheet
+        showPinConfirmationSheet = true;
+        showDirectionSheet = false;
+        showSensorSheet = false;
+        showSensorSettingsSheet = false;
+        showRerouteConfirmationSheet = false;
+      });
 
-    // Draw polyline from user to tapped pin
-    if (currentPosition != null) {
-      _drawRoute(
-        LatLng(currentPosition!.latitude, currentPosition!.longitude),
-        position, // use the tapped location
-      );
+      // Draw polyline from user to tapped pin
+      if (currentPosition != null) {
+        _drawRoute(
+          LatLng(currentPosition!.latitude, currentPosition!.longitude),
+          position, // use the tapped location
+        );
+      }
     }
 
-    // LatLng tap = tappedPosition!;
-    // bool inside = isInsideAvoidZone(tap, avoidZones);
-    //
-    // if (inside) {
-    //   print("Tapped inside restricted area!");
-    //   setState(() {
-    //     insideAlertZone = true;
-    //   });
-    // } else {
-    //   print("Safe: tapped outside avoid zones.");
-    //   setState(() {
-    //     insideAlertZone = false;
-    //   });
-    // }
-
-
-    Position fakePosition = Position(
-      latitude: position.latitude,
-      longitude: position.longitude,
-      timestamp: DateTime.now(),
-      accuracy: 1,
-      altitude: 0,
-      altitudeAccuracy: 1,
-      heading: 0,
-      headingAccuracy: 1,
-      speed: 0,
-      speedAccuracy: 1,
-    );
-
-    _updatePosition(fakePosition);
 
 
 
+    if (testingMode) {
+      Position fakePosition = Position(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        timestamp: DateTime.now(),
+        accuracy: 1,
+        altitude: 0,
+        altitudeAccuracy: 1,
+        heading: 0,
+        headingAccuracy: 1,
+        speed: 0,
+        speedAccuracy: 1,
+      );
 
+      _updatePosition(fakePosition);
+    }
   }
 
   void cancelPinSelection() {
@@ -1208,7 +1221,7 @@ class _MapScreenState extends State<MapScreen> {
             zoomControlsEnabled: false,
             tileOverlays: showFloodZones ? getFloodTileOverlays() : {},
 
-            minMaxZoomPreference: const MinMaxZoomPreference(13.0, 18.0),
+            //minMaxZoomPreference: const MinMaxZoomPreference(13.0, 18.0),
           ),
 
           // 🔍 Floating Search Bar (Top)
@@ -1839,7 +1852,11 @@ class _MapScreenState extends State<MapScreen> {
                                 _infoRow("Sensor ID", selectedSensorId ?? "-"),
                                 _infoRow("Location", "Ortigas Ave"),
                                 _infoRow(
-                                    "Flood Height", "${data?['floodHeight'] ?? "-"} cm"),
+                                    "Flood Height",
+                                    data?['floodHeight'] != null
+                                        ? "${UnitConverter.cmToInches(double.tryParse(data!['floodHeight'].toString()) ?? 0).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')} in"
+                                        : "-"
+                                ),
                                 _infoRow("Distance", "${data?['distance'] ?? "-"} cm"),
                                 _statusRow(
                                   "Status",
@@ -1966,8 +1983,10 @@ class _MapScreenState extends State<MapScreen> {
                                     Text(
                                       "Set Pin Location",
                                       style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
+                                        fontFamily: 'AvenirNext',
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w700,
+                                        color: colorTextPrimary,
                                       ),
                                     ),
                                     Text(
@@ -1992,7 +2011,7 @@ class _MapScreenState extends State<MapScreen> {
                             children: [
                               Expanded(
                                 child: secondaryButton(
-                                  text: "IGNORE",
+                                  text: "CANCEL",
                                   onTap: () {
                                     cancelPinSelection();
                                   },
@@ -2137,15 +2156,21 @@ class _MapScreenState extends State<MapScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      "Route Adjustment",
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
+                                    Text(
+                                      (savedPinPosition != null && savedPinPosition != "null")
+                                          ? "Route Adjustment"
+                                          : "Create Reroute",
+                                      style: const TextStyle(
+                                        fontFamily: 'AvenirNext',
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w700,
+                                        color: colorTextPrimary,
                                       ),
                                     ),
                                     Text(
-                                      "Confirm to generate a safer alternate path.",
+                                      (savedPinPosition != null && savedPinPosition != "null")
+                                          ? "Confirm to generate a safer alternate path."
+                                          : "Confirm to select destination to reroute",
                                       style: TextStyle(
                                         fontSize: 13,
                                         color: Colors.grey[600],
@@ -2177,17 +2202,23 @@ class _MapScreenState extends State<MapScreen> {
                                 child: primaryButton(
                                   text: "REROUTE",
                                   onTap: () {
+                                    final hasValidPin = savedPinPosition != null && savedPinPosition != "null";
+                                    print("hasValidPin: $hasValidPin");
                                     setState(() {
                                       normalRouting = false;
                                       showRerouteConfirmationSheet = false;
                                     });
 
-                                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                                      _drawRoute(
-                                        LatLng(currentPosition!.latitude, currentPosition!.longitude),
-                                        savedPinMarker!.position,
-                                      );
-                                    });
+                                    if (!hasValidPin) {
+                                      openPlaceSearch();
+                                    } else {
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        _drawRoute(
+                                          LatLng(currentPosition!.latitude, currentPosition!.longitude),
+                                          savedPinMarker!.position,
+                                        );
+                                      });
+                                    }
                                   },
                                 ),
                               ),
