@@ -109,6 +109,33 @@ class _MapScreenState extends State<MapScreen> {
   LatLng? savedPinPosition;
   Marker? savedPinMarker;
 
+  LatLng? tappedPosition;          // temporary pin when user taps on map
+  Marker? tappedMarker;
+  Map<String, dynamic> currentPlace = {
+    "name": "",
+    "location": LatLng(0.0, 0.0),
+  };
+
+  LatLng? savedStartPosition;
+  Marker? savedStartMarker;
+
+  LatLng? startPosition;
+  Marker? startMarker;
+  Map<String, dynamic> startPlace = {
+    "name": "",
+    "location": LatLng(0.0, 0.0),
+  };
+
+  Map<String, dynamic> savedPlace = {
+    "name": "",
+    "location": LatLng(0.0, 0.0),
+  };
+
+  Map<String, dynamic> savedStartPlace = {
+    "name": "",
+    "location": LatLng(0.0, 0.0),
+  };
+
   @override
   void initState() {
     super.initState();
@@ -130,7 +157,7 @@ class _MapScreenState extends State<MapScreen> {
       _loadCurrentLocation();
       _updateTime();
       //_drawAvoidZones();
-      //startLocationUpdates();
+      startLocationUpdates();
 
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
         _updateTime();
@@ -185,30 +212,47 @@ class _MapScreenState extends State<MapScreen> {
 
 
 
+  // void startLocationUpdates() {
+  //   const LocationSettings locationSettings = LocationSettings(
+  //     accuracy: LocationAccuracy.high,
+  //     distanceFilter: 1, // minimum distance in meters to trigger update
+  //   );
+  //
+  //   _positionStream = Geolocator.getPositionStream(locationSettings: locationSettings)
+  //       .listen((Position position) {
+  //     if (_lastUpdatedPosition == null) {
+  //       _updatePosition(position);
+  //     } else {
+  //       double distance = Geolocator.distanceBetween(
+  //         _lastUpdatedPosition!.latitude,
+  //         _lastUpdatedPosition!.longitude,
+  //         position.latitude,
+  //         position.longitude,
+  //       );
+  //
+  //       if (distance >= 1) {
+  //         _updatePosition(position);
+  //       }
+  //     }
+  //   });
+  // }
+
+
+  LatLng? _previousLatLng;
+  bool _isAnimatingMarker = false;
+
   void startLocationUpdates() {
     const LocationSettings locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 1, // minimum distance in meters to trigger update
+      distanceFilter: 1,
     );
 
     _positionStream = Geolocator.getPositionStream(locationSettings: locationSettings)
         .listen((Position position) {
-      if (_lastUpdatedPosition == null) {
-        _updatePosition(position);
-      } else {
-        double distance = Geolocator.distanceBetween(
-          _lastUpdatedPosition!.latitude,
-          _lastUpdatedPosition!.longitude,
-          position.latitude,
-          position.longitude,
-        );
-
-        if (distance >= 1) { // update every 5 meters
-          _updatePosition(position);
-        }
-      }
+      _updatePosition(position); // update every emitted position
     });
   }
+
 
   @override
   void dispose() {
@@ -219,39 +263,68 @@ class _MapScreenState extends State<MapScreen> {
 
 
   void _updatePosition(Position position) {
+
+    LatLng rawLatLng = LatLng(
+      position.latitude,
+      position.longitude,
+    );
+
+    // ⭐ smooth GPS instead of animating
+    LatLng userLatLng = smoothPosition(rawLatLng);
+
     setState(() {
-      currentPosition = position;
-      _lastUpdatedPosition = position;
+      currentPosition = Position(
+        latitude: userLatLng.latitude,
+        longitude: userLatLng.longitude,
+        timestamp: position.timestamp,
+        accuracy: position.accuracy,
+        altitude: position.altitude,
+        heading: position.heading,
+        speed: position.speed,
+        speedAccuracy: position.speedAccuracy,
+        altitudeAccuracy: position.altitudeAccuracy,
+        headingAccuracy: position.headingAccuracy,
+      );
     });
 
     _addUserMarker();
 
-    LatLng userLatLng = LatLng(
-      position.latitude,
-      position.longitude,
-    );
+    if (savedStartPosition == null && savedPinPosition != null) {
+      _drawRoute(userLatLng, savedPinPosition!);
+    }
 
     final avoidZones = buildAvoidZonesFromSensors();
     bool inside = isInsideAvoidZone(userLatLng, avoidZones);
     bool near = isNearAvoidZone(userLatLng, avoidZones);
 
-    if (inside) {
-      print("Position inside restricted area!");
-    } else {
-      print("Safe: Position outside avoid zones.");
-    }
-
-
     if (near) {
-      print("Position near restricted area!");
-      setState(() {
-        startAlert();
-      });
+      startAlert();
     } else {
-      print("Safe: Position far avoid zones.");
       stopAlert();
     }
   }
+
+  LatLng? _smoothedLatLng;
+
+  LatLng smoothPosition(LatLng newPosition) {
+    const double smoothFactor = 0.2; // 0.1–0.3 recommended
+
+    if (_smoothedLatLng == null) {
+      _smoothedLatLng = newPosition;
+      return newPosition;
+    }
+
+    final lat = _smoothedLatLng!.latitude +
+        (newPosition.latitude - _smoothedLatLng!.latitude) * smoothFactor;
+
+    final lng = _smoothedLatLng!.longitude +
+        (newPosition.longitude - _smoothedLatLng!.longitude) * smoothFactor;
+
+    _smoothedLatLng = LatLng(lat, lng);
+
+    return _smoothedLatLng!;
+  }
+
 
   bool displayAlert = false;
   Timer? _alertTimer;
@@ -623,17 +696,9 @@ class _MapScreenState extends State<MapScreen> {
   }
 
 
-  Map<String, dynamic> savedPlace = {
-    "name": "",
-    "location": LatLng(0.0, 0.0),
-  };
 
-  LatLng? tappedPosition;          // temporary pin when user taps on map
-  Marker? tappedMarker;
-  Map<String, dynamic> currentPlace = {
-    "name": "",
-    "location": LatLng(0.0, 0.0),
-  };
+
+
 
   void _onMapTap(LatLng position) async {
 
@@ -656,6 +721,7 @@ class _MapScreenState extends State<MapScreen> {
 
     if (settingPin) {
       setState(() {
+        searchEndLocation = true;
         // Remove previous tapped marker
         if (tappedMarker != null) _markers.remove(tappedMarker);
 
@@ -683,13 +749,18 @@ class _MapScreenState extends State<MapScreen> {
         showRerouteConfirmationSheet = false;
       });
 
-      // Draw polyline from user to tapped pin
-      if (currentPosition != null) {
-        _drawRoute(
-          LatLng(currentPosition!.latitude, currentPosition!.longitude),
-          position, // use the tapped location
-        );
+      if (savedStartPosition != null) {
+        _drawRoute(savedStartPosition!, position);
+      } else {
+        // Draw polyline from user to tapped pin
+        if (currentPosition != null) {
+          _drawRoute(
+            LatLng(currentPosition!.latitude, currentPosition!.longitude),
+            position, // use the tapped location
+          );
+        }
       }
+
     }
 
 
@@ -727,10 +798,26 @@ class _MapScreenState extends State<MapScreen> {
         "name": "",
         "location": LatLng(0.0, 0.0),
       };
+
+      // Remove temporary start pin
+      if (startMarker != null) {
+        _markers.remove(startMarker);
+      }
+      startMarker = null;
+      startPosition = null;
+
+      // Clear temporary start place
+      startPlace = {
+        "name": "",
+        "location": LatLng(0.0, 0.0),
+      };
+
+
     });
 
-    // Restore saved pin → draw route again if exists
-    if (savedPinMarker != null && currentPosition != null) {
+    if (savedStartPosition != null) {
+      _drawRoute(savedStartPosition!, savedPinPosition!);
+    }else if (savedPinMarker != null && currentPosition != null) {
       _drawRoute(
         LatLng(currentPosition!.latitude, currentPosition!.longitude),
         savedPinMarker!.position,
@@ -749,40 +836,6 @@ class _MapScreenState extends State<MapScreen> {
   }
 
 
-  // Set<Polygon> _polygons = {};
-  // void _drawAvoidZones() {
-  //   Set<Polygon> polygons = {};
-  //
-  //   for (int i = 0; i < avoidZones.length; i++) {
-  //     final zone = avoidZones[i];
-  //
-  //     final center = zone["position"] as LatLng;
-  //     final radius = zone["radius"] as double;
-  //
-  //     // Convert radius in meters to approximate degrees
-  //     final delta = radius / 111000;
-  //
-  //     // Square corners (clockwise)
-  //     final topLeft = LatLng(center.latitude + delta, center.longitude - delta); // A
-  //     final topRight = LatLng(center.latitude + delta, center.longitude + delta); // B
-  //     final bottomRight = LatLng(center.latitude - delta, center.longitude + delta); // C
-  //     final bottomLeft = LatLng(center.latitude - delta, center.longitude - delta); // D
-  //
-  //     final points = [topLeft, topRight, bottomRight, bottomLeft, topLeft]; // close the polygon
-  //
-  //     polygons.add(Polygon(
-  //       polygonId: PolygonId("avoid_zone_$i"),
-  //       points: points,
-  //       fillColor: Colors.red.withOpacity(0.3),
-  //       strokeColor: Colors.red,
-  //       strokeWidth: 2,
-  //     ));
-  //   }
-  //
-  //   setState(() {
-  //     _polygons = polygons;
-  //   });
-  // }
 
   bool isInsideAvoidZone(LatLng usersPosition, List<Map<String, dynamic>> avoidZones) {
     for (var zone in avoidZones) {
@@ -922,54 +975,151 @@ class _MapScreenState extends State<MapScreen> {
         'assets/images/selected_location.png',
       );
 
-      setState(() {
-        // Remove previous tapped marker
-        if (tappedMarker != null) _markers.remove(tappedMarker);
 
-        // Add new tapped marker
-        tappedMarker = Marker(
-          markerId: const MarkerId('tapped_pin'),
-          position: position,
-          icon: pinIcon,
-          anchor: const Offset(0.5, 1.0),
-        );
-        _markers.add(tappedMarker!);
-        tappedPosition = position;
+      if (searchEndLocation) {
+        setState(() {
+          // Remove previous tapped marker
+          if (tappedMarker != null) _markers.remove(tappedMarker);
 
-        // Set currentPlace (temporary)
-        currentPlace = {
-          "name": name,
-          "location": position,
-        };
+          // Add new tapped marker
+          tappedMarker = Marker(
+            markerId: const MarkerId('tapped_pin'),
+            position: position,
+            icon: pinIcon,
+            anchor: const Offset(0.5, 1.0),
+          );
+          _markers.add(tappedMarker!);
+          tappedPosition = position;
 
-        // Show confirmation sheet
-        showPinConfirmationSheet = true;
-        showDirectionSheet = false;
-        showSensorSheet = false;
-        showSensorSettingsSheet = false;
-        showRerouteConfirmationSheet = false;
-      });
+          // Set currentPlace (temporary)
+          currentPlace = {
+            "name": name,
+            "location": position,
+          };
 
-      if (currentPosition != null) {
-        LatLng userPosition = LatLng(currentPosition!.latitude, currentPosition!.longitude);
+          // Show confirmation sheet
+          showPinConfirmationSheet = true;
+          showDirectionSheet = false;
+          showSensorSheet = false;
+          showSensorSettingsSheet = false;
+          showRerouteConfirmationSheet = false;
+        });
 
-        // Draw polyline to temporary/current place
-        _drawRoute(userPosition, position);
+        if (savedStartPosition != null) {
 
-        // Zoom to fit both locations
-        LatLngBounds bounds = LatLngBounds(
-          southwest: LatLng(
-            min(userPosition.latitude, position.latitude),
-            min(userPosition.longitude, position.longitude),
-          ),
-          northeast: LatLng(
-            max(userPosition.latitude, position.latitude),
-            max(userPosition.longitude, position.longitude),
-          ),
-        );
+          LatLng start = savedStartPosition!;
+          LatLng destination = position;
 
-        mapController.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
+          _drawRoute(start, destination);
+
+          // Create bounds covering both points
+          LatLngBounds bounds = LatLngBounds(
+            southwest: LatLng(
+              min(start.latitude, destination.latitude),
+              min(start.longitude, destination.longitude),
+            ),
+            northeast: LatLng(
+              max(start.latitude, destination.latitude),
+              max(start.longitude, destination.longitude),
+            ),
+          );
+
+          // Animate camera to fit both markers
+          mapController.animateCamera(
+            CameraUpdate.newLatLngBounds(bounds, 120), // padding
+          );
+        } else if (currentPosition != null) {
+          LatLng userPosition = LatLng(currentPosition!.latitude, currentPosition!.longitude);
+
+          // Draw polyline to temporary/current place
+          _drawRoute(userPosition, position);
+
+          // Zoom to fit both locations
+          LatLngBounds bounds = LatLngBounds(
+            southwest: LatLng(
+              min(userPosition.latitude, position.latitude),
+              min(userPosition.longitude, position.longitude),
+            ),
+            northeast: LatLng(
+              max(userPosition.latitude, position.latitude),
+              max(userPosition.longitude, position.longitude),
+            ),
+          );
+
+          mapController.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
+        }
       }
+      else if (searchStartLocation) {
+        setState(() {
+          // Remove previous start Marker
+          if (startMarker != null) _markers.remove(startMarker);
+
+          // Add new start marker
+          startMarker = Marker(
+            markerId: const MarkerId('start_pin'),
+            position: position,
+            icon: pinIcon,
+            anchor: const Offset(0.5, 1.0),
+          );
+          _markers.add(startMarker!);
+          startPosition = position;
+
+          // Set currentPlace (temporary)
+          startPlace = {
+            "name": name,
+            "location": position,
+          };
+
+          // Show confirmation sheet
+          showPinConfirmationSheet = true;
+          showDirectionSheet = false;
+          showSensorSheet = false;
+          showSensorSettingsSheet = false;
+          showRerouteConfirmationSheet = false;
+        });
+
+        print("Saved Start: $savedStartPosition");
+        print("Saved Destination: $savedPinPosition");
+
+
+        if (savedPinPosition == null) {
+          mapController.animateCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                target: position,
+                zoom: 15,
+              ),
+            ),
+          );
+        } else if (savedPinPosition != null) {
+
+          LatLng start = position;
+          LatLng destination = savedPinPosition!;
+
+          _drawRoute(position, destination);
+
+          // Create bounds covering both points
+          LatLngBounds bounds = LatLngBounds(
+            southwest: LatLng(
+              min(start.latitude, destination.latitude),
+              min(start.longitude, destination.longitude),
+            ),
+            northeast: LatLng(
+              max(start.latitude, destination.latitude),
+              max(start.longitude, destination.longitude),
+            ),
+          );
+
+          // Animate camera to fit both markers
+          mapController.animateCamera(
+            CameraUpdate.newLatLngBounds(bounds, 120), // padding
+          );
+        }
+
+
+      }
+
+
     }
   }
 
@@ -1496,17 +1646,27 @@ class _MapScreenState extends State<MapScreen> {
 
                                 // Current Location
                                 InkWell(
-                                  onTap: () {},
+                                  onTap: () {
+                                    setState(() {
+                                      searchStartLocation = true;
+                                      searchEndLocation = false;
+                                    });
+                                    openPlaceSearch();
+                                  },
                                   child: SizedBox(
                                     height: 50,
                                     child: Row(
                                       children: [
                                         Icon(Icons.my_location, size: 20, color: colorPrimary),
                                         const SizedBox(width: 12),
-                                        const Expanded(
+                                        Expanded(
                                           child: Text(
-                                            "Current Location",
-                                            style: TextStyle(
+                                            savedStartPlace["name"] != ""
+                                              ? savedStartPlace["name"]
+                                              : (savedStartPosition != null
+                                              ? "${savedStartPosition!.latitude.toStringAsFixed(5)}, ${savedStartPosition!.longitude.toStringAsFixed(5)}"
+                                              : "Current Location"),
+                                            style: const TextStyle(
                                               fontFamily: 'AvenirNext',
                                               fontSize: 15,
                                               fontWeight: FontWeight.w600,
@@ -1523,7 +1683,13 @@ class _MapScreenState extends State<MapScreen> {
 
                                 // Destination
                                 InkWell(
-                                  onTap: openPlaceSearch,
+                                  onTap: () {
+                                    setState(() {
+                                      searchStartLocation = false;
+                                      searchEndLocation = true;
+                                    });
+                                    openPlaceSearch();
+                                  },
                                   child: SizedBox(
                                     height: 50,
                                     child: Row(
@@ -2023,23 +2189,42 @@ class _MapScreenState extends State<MapScreen> {
                                   text: "CONFIRM",
                                   onTap: () {
                                     setState(() {
-                                      if (savedPinMarker != null) {
-                                        _markers.remove(savedPinMarker);
+                                      if (searchEndLocation) {
+                                        if (savedPinMarker != null) {
+                                          _markers.remove(savedPinMarker);
+                                        }
+
+                                        savedPinMarker = tappedMarker;
+                                        savedPinPosition = tappedPosition;
+                                        savedPlace = Map.from(currentPlace);
+
+                                        tappedMarker = null;
+                                        tappedPosition = null;
+                                        currentPlace = {
+                                          "name": "",
+                                          "location": LatLng(0.0, 0.0),
+                                        };
                                       }
+                                      else if (searchStartLocation) {
+                                        if (savedStartMarker != null) {
+                                          _markers.remove(savedStartMarker);
+                                        }
 
-                                      savedPinMarker = tappedMarker;
-                                      savedPinPosition = tappedPosition;
-                                      savedPlace = Map.from(currentPlace);
+                                        savedStartMarker = startMarker;
+                                        savedStartPosition = startPosition;
+                                        savedStartPlace = Map.from(startPlace);
 
-                                      tappedMarker = null;
-                                      tappedPosition = null;
-                                      currentPlace = {
-                                        "name": "",
-                                        "location": LatLng(0.0, 0.0),
-                                      };
+                                        startMarker = null;
+                                        startPosition = null;
+                                        startPlace = {
+                                          "name": "",
+                                          "location": LatLng(0.0, 0.0),
+                                        };
+                                      }
 
                                       showPinConfirmationSheet = false;
                                       _circles.removeWhere((c) => c.circleId.value.startsWith('sensor'));
+
                                     });
                                   },
                                 ),

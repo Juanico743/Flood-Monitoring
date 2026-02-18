@@ -14,13 +14,17 @@ const hereAPIKey = "TiHkVyYjkDXokfAstiAx97Iqttb-eqUTd1vCq1aiqhE";
 const String mapboxAPI = "pk.eyJ1IjoidmluY2VudGplcnJ5anVhbmljbyIsImEiOiJjbWlyanl6MDMwMmRuM2NzZnAzZWRtMGRzIn0.8zbipe-6rXc1C5u0fP15aQ";
 
 /// Testing mode
-bool testingMode = true;
+bool testingMode = false;
 bool settingPin = true;
 
 /// Global Variable
 Position? currentPosition;
 String selectedVehicle = "";
 int sensorHeight = 200;
+
+/// Map Variable
+bool searchStartLocation = false;
+bool searchEndLocation = false;
 
 
 

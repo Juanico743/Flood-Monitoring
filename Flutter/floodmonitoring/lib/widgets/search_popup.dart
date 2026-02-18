@@ -104,7 +104,11 @@ class _PlaceSearchPopupState extends State<PlaceSearchPopup> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  "Select Destination",
+                  (searchStartLocation)
+                      ? "Select starting point"
+                      : (searchEndLocation)
+                        ? "Select destination"
+                        : "Select location",
                   style: const TextStyle(
                     fontFamily: 'AvenirNext',
                     fontSize: 18,
