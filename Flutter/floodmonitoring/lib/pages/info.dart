@@ -3,8 +3,6 @@ import 'package:floodmonitoring/services/weather.dart';
 import 'package:floodmonitoring/utils/converters.dart';
 import 'package:flutter/material.dart';
 import 'package:floodmonitoring/services/flood_level.dart';
-import 'package:floodmonitoring/utils/style.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../services/global.dart';
 
 class Info extends StatefulWidget {
@@ -18,14 +16,18 @@ class _InfoState extends State<Info> {
   final blynk = BlynkService();
   Timer? _timer;
 
+  // ----------------------------------------
+  // INITIALIZATION (initState)
+  // ----------------------------------------
+
   @override
   void initState() {
     super.initState();
-    fetchDataForSensor("sensor_01");
-    getWeather("sensor_01");
+    fetchDataForSensor(sensorViewInfo);
+    getWeather(sensorViewInfo);
 
     _timer = Timer.periodic(
-        const Duration(seconds: 1), (_) => fetchDataForSensor("sensor_01"));
+        const Duration(seconds: 1), (_) => fetchDataForSensor(sensorViewInfo));
   }
 
   @override
@@ -34,20 +36,28 @@ class _InfoState extends State<Info> {
     super.dispose();
   }
 
+  // ----------------------------------------
+  // LOGIC / HELPER FUNCTIONS
+  // ----------------------------------------
+
+
+  /// ----- FETCH DATA FOR SENSOR -----
   Future<void> fetchDataForSensor(String sensorId) async {
     final sensor = sensors[sensorId];
     if (sensor == null) return;
 
     final String token = sensor['token'];
     final String pin = sensor['pin'];
+    final double height = sensor['height'];
 
-    final data = await BlynkService().fetchDistance(token, pin);
+    final data = await BlynkService().fetchDistance(token, pin, height);
 
     setState(() {
       sensors[sensorId]!['sensorData'] = data;
     });
   }
 
+  /// ----- GET WEATHER -----
   Future<void> getWeather(String sensorId) async {
     final sensor = sensors[sensorId];
     if (sensor == null) return;
@@ -65,6 +75,12 @@ class _InfoState extends State<Info> {
       });
     }
   }
+
+
+
+  // ----------------------------------------
+  // BUILD / CORE UI
+  // --------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -87,15 +103,17 @@ class _InfoState extends State<Info> {
             const SizedBox(height: 12),
             _weatherSection(),
             const SizedBox(height: 12),
-            _alertSection(),
-            const SizedBox(height: 12),
-            _advancedSection(),
           ],
         ),
       ),
     );
   }
 
+  // ----------------------------------------
+  // UI WIDGETS
+  // ----------------------------------------
+
+  /// ----- CUSTOM APP BAR -----
   Widget _customAppBar(String title) {
     return Container(
       decoration: BoxDecoration(
@@ -130,8 +148,9 @@ class _InfoState extends State<Info> {
     );
   }
 
+  /// ----- HEADER -----
   Widget _header() {
-    final sensor = sensors["sensor_01"]!;
+    final sensor = sensors[sensorViewInfo]!;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,7 +162,7 @@ class _InfoState extends State<Info> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Ortigas Ave Sensor #1",
+                sensorViewInfo,
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
@@ -175,8 +194,9 @@ class _InfoState extends State<Info> {
     );
   }
 
+  /// ----- DATA STATUS COLOR -----
   Color dataStatusColor() {
-    switch (sensors["sensor_01"]!["sensorData"]['status']) {
+    switch (sensors[sensorViewInfo]!["sensorData"]['status']) {
       case 'Safe':
         return Colors.green;
       case 'Warning':
@@ -188,41 +208,46 @@ class _InfoState extends State<Info> {
     }
   }
 
+  /// ----- LIVE MEASUREMENTS -----
   Widget _liveMeasurements() {
-    final sensor = sensors["sensor_01"]!;
+    final sensor = sensors[sensorViewInfo]!;
     return _card(
       title: "Live Measurements",
       child: Column(
         children: [
           _item(
               "Flood Height",
-              "${UnitConverter.cmToInches((sensor['sensorData']['floodHeight'] as num).toDouble()).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')} in"
+              "${UnitConverter.cmToFeet((sensor['sensorData']['floodHeight'] as num).toDouble()).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')} ft"
           ),
           _item("Distance to Water", "${sensor['sensorData']['distance']} cm"),
           _item("Flood Status", sensor['sensorData']['status'],
-              color: dataStatusColor()), // icon removed
+              color: dataStatusColor()),
           _item("Last Update", sensor['sensorData']['lastUpdate']),
         ],
       ),
     );
   }
 
+  /// ----- SENSOR DETAILS -----
   Widget _sensorDetails() {
+    final sensor = sensors[sensorViewInfo]!;
+
     return _card(
       title: "Sensor Details",
       child: Column(
         children: [
-          _item("Location", "Ortigas Ave Sensor"),
-          _item("Monitoring Radius", "20 meters"),
-          _item("Battery Level", "85%"),
+          _item("Location", "${sensor['location']}"),
+          _item("Monitoring Radius", "${sensor['radius']} m"),
+          _item("Monitoring Height", "${sensor['height']} m"),
           _item("Connection", "Online"),
         ],
       ),
     );
   }
 
+  /// ----- WEATHER SECTION -----
   Widget _weatherSection() {
-    final weather = sensors["sensor_01"]!['weatherData'];
+    final weather = sensors[sensorViewInfo]!['weatherData'];
     return _card(
       title: "Weather",
       child: Column(
@@ -235,28 +260,7 @@ class _InfoState extends State<Info> {
     );
   }
 
-  Widget _alertSection() {
-    return _card(
-      title: "Alerts",
-      child: const Text(
-        "No active alerts",
-        style: TextStyle(fontSize: 16, color: Colors.black54),
-      ),
-    );
-  }
-
-  Widget _advancedSection() {
-    return _card(
-      title: "Advanced Info",
-      child: Column(
-        children: [
-          _item("Sensor ID", "SN-1028391"),
-          _item("Blynk Token", "••••••••••••••••••••"),
-        ],
-      ),
-    );
-  }
-
+  /// ----- GENERAL CARD -----
   Widget _card({required String title, required Widget child}) {
     return Container(
       width: double.infinity,
@@ -282,9 +286,10 @@ class _InfoState extends State<Info> {
     );
   }
 
+  /// ----- ITEM WIDGET -----
   Widget _item(String name, String value, {Color? color}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4), // smaller gap
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

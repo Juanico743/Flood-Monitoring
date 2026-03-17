@@ -135,8 +135,8 @@ class _DashboardState extends State<Dashboard> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    color1_3,
-                    color1,
+                    colorPrimaryLight,
+                    colorPrimaryMid,
                   ],
                 ),
                 borderRadius: BorderRadius.circular(15),
@@ -170,7 +170,7 @@ class _DashboardState extends State<Dashboard> {
                             Navigator.pushNamed(context, '/map');
                           },
                           style: TextButton.styleFrom(
-                            backgroundColor: color2,
+                            backgroundColor: colorPrimaryDeep,
                             padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 15),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(5),
@@ -183,7 +183,7 @@ class _DashboardState extends State<Dashboard> {
                               fontSize: 15,
                             ),
                           ),
-                        ), // This is a Button
+                        ),
                       ],
                     ),
                   ),
@@ -225,7 +225,7 @@ class _DashboardState extends State<Dashboard> {
 
             SizedBox(height: 15),
 
-            ///Weather Card
+            ///WEATHER CARDS
             Container(
               padding: EdgeInsets.all(15),
               margin: EdgeInsets.symmetric(horizontal: 15),
@@ -251,7 +251,7 @@ class _DashboardState extends State<Dashboard> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  // Weather Icon
+                  // WEATHER ICON
                   Column(
                     children: [
                       if (iconCode.isNotEmpty)
@@ -272,7 +272,7 @@ class _DashboardState extends State<Dashboard> {
                     ],
                   ),
 
-                  // Weather Info
+                  // WEATHER INFO
                   Column(
                     children: [
                       Text(
@@ -284,10 +284,9 @@ class _DashboardState extends State<Dashboard> {
                       ),
 
                       Text(
-                        // ignore: unnecessary_null_comparison
                         temperature != null ? '${temperature}°C' : '--°C',
                         style: TextStyle(
-                          color: color1,
+                          color: colorPrimaryMid,
                           fontSize: 30,
                           fontWeight: FontWeight.w700,
                         ),
@@ -309,7 +308,7 @@ class _DashboardState extends State<Dashboard> {
             SizedBox(height: 15),
 
 
-            ///Sliding Cards
+            ///SLIDING CARDS
 
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -318,7 +317,7 @@ class _DashboardState extends State<Dashboard> {
                 child: Row(
                   children: [
                     miniCard(
-                      color: color2,
+                      color: colorPrimaryMid,
                       title: 'Recent\nAlert',
                       textColor: Colors.white,
                       image: 'assets/images/warning.png',
@@ -328,7 +327,7 @@ class _DashboardState extends State<Dashboard> {
                       },
                     ),
                     miniCard(
-                      color: color1,
+                      color: colorPrimaryMid,
                       title: 'Flood\ntips',
                       textColor: Colors.black,
                       image: 'assets/images/water-damage.png',
@@ -338,7 +337,7 @@ class _DashboardState extends State<Dashboard> {
                       },
                     ),
                     miniCard(
-                      color: color3,
+                      color: colorPrimaryMid,
                       title: 'Rescue\nCall',
                       textColor: Colors.black,
                       image: 'assets/images/siren-on.png',

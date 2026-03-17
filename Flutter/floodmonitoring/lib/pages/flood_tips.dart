@@ -1,3 +1,4 @@
+import 'package:floodmonitoring/utils/style.dart';
 import 'package:floodmonitoring/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,8 +13,11 @@ class FloodTips extends StatefulWidget {
 class _FloodTipsState extends State<FloodTips> {
   String selectedVehicle = 'Motorcycle';
 
-  final Color themeBlue = Colors.blueAccent;
+  // ----------------------------------------
+  // STATE / VARIABLES
+  // ----------------------------------------
 
+  /// ----- VEHICLE TIPS -----
   final Map<String, String> vehicleTips = {
     'Bicycle': """
 Bicycles lack stability in water. Even 10cm of moving water can wash a cyclist away, and submerged hazards are invisible.
@@ -51,7 +55,20 @@ While trucks have higher clearance, their large surface area makes them more sus
 """,
   };
 
+  /// ----- STOCK IMAGE -----
+  final List<String> stockImage = [
+    'stock-image-bike.png',
+    'stock-image-motorcycle.png',
+    'stock-image-car.png',
+    'stock-image-truck.png'
+  ];
+
+  /// ----- VEHICLE LIST -----
   final List<String> vehicleList = ['Bicycle', 'Motorcycle', 'Car', 'Truck'];
+
+  // ----------------------------------------
+  // BUILD / CORE UI
+  // ----------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -59,12 +76,12 @@ While trucks have higher clearance, their large surface area makes them more sus
       backgroundColor: Colors.grey[50],
       appBar: CustomAppBar(
         title: "Flood Safety Tips",
-        backgroundColor: themeBlue,
+        backgroundColor: colorPrimary,
         onBack: () => Navigator.pop(context),
       ),
       body: Column(
         children: [
-          // ----- Vehicle Selection (Small buttons, scrollable) -----
+          /// ----- VEHICLE SELECTION (Small buttons, scrollable) -----
           Container(
             height: 70,
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -85,10 +102,10 @@ While trucks have higher clearance, their large surface area makes them more sus
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: isSelected ? themeBlue : Colors.white,
+                      color: isSelected ? colorPrimary : Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isSelected ? themeBlue : Colors.grey.shade300,
+                        color: isSelected ? colorPrimary : Colors.grey.shade300,
                         width: 1,
                       ),
                       boxShadow: [
@@ -127,7 +144,7 @@ While trucks have higher clearance, their large surface area makes them more sus
 
           const SizedBox(height: 8),
 
-          // ----- Tips Scrollable Section -----
+          /// ----- SELECTED VEHICLE CARD -----
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -139,7 +156,11 @@ While trucks have higher clearance, their large surface area makes them more sus
     );
   }
 
-  // ----- Card UI -----
+  // ----------------------------------------
+  // UI WIDGETS
+  // ----------------------------------------
+
+  /// ----- CARD WIDGET -----
   Widget _card(String title, String tip) {
     return Container(
       width: double.infinity,
@@ -166,10 +187,9 @@ While trucks have higher clearance, their large surface area makes them more sus
             ),
           ),
           const SizedBox(height: 12),
-          // Parse **bold**
           _parseBoldText(tip),
           const SizedBox(height: 20),
-          // Illustration
+          /// Illustration
           Container(
             width: double.infinity,
             height: 180,
@@ -177,8 +197,8 @@ While trucks have higher clearance, their large surface area makes them more sus
               color: Colors.blue.shade50,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.blue.shade100),
-              image: const DecorationImage(
-                image: AssetImage('assets/images/flood-cars.png'),
+              image: DecorationImage(
+                image: AssetImage('assets/images/stock/${stockImage[vehicleList.indexOf(title)]}'),
                 fit: BoxFit.cover,
               ),
             ),
@@ -194,7 +214,7 @@ While trucks have higher clearance, their large surface area makes them more sus
             ),
           ),
           const SizedBox(height: 16),
-          // ----- Useful Resources -----
+          /// ----- USEFUL RESOURCES -----
           Text(
             "Useful Resources:",
             style: const TextStyle(
@@ -228,7 +248,7 @@ While trucks have higher clearance, their large surface area makes them more sus
     );
   }
 
-  // ----- PARSE **bold** -----
+  /// ----- PARSE **bold** -----
   Widget _parseBoldText(String text) {
     List<TextSpan> spans = [];
     RegExp exp = RegExp(r'\*\*(.*?)\*\*');
@@ -278,14 +298,20 @@ While trucks have higher clearance, their large surface area makes them more sus
     );
   }
 
-  // ----- BULLET LINK WIDGET -----
+  /// ----- BULLET LINK WIDGET -----
   Widget _bulletLink(String text, String url) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: InkWell(
         onTap: () async {
-          if (await canLaunchUrl(Uri.parse(url))) {
-            await launchUrl(Uri.parse(url));
+          final Uri uri = Uri.parse(url);
+          try {
+            await launchUrl(
+              uri,
+              mode: LaunchMode.externalApplication,
+            );
+          } catch (e) {
+            debugPrint("Could not launch $url: $e");
           }
         },
         child: Row(

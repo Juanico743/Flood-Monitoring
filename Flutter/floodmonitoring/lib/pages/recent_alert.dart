@@ -1,6 +1,6 @@
 import 'package:floodmonitoring/services/global.dart';
+import 'package:floodmonitoring/utils/converters.dart';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:floodmonitoring/widgets/custom_app_bar.dart'; // <-- use our reusable AppBar
 
 class RecentAlert extends StatefulWidget {
@@ -13,9 +13,15 @@ class RecentAlert extends StatefulWidget {
 class _RecentAlertState extends State<RecentAlert> {
   final Color themeBlue = Colors.blueAccent;
 
+
+  // ----------------------------------------
+  // BUILD / CORE UI
+  // ----------------------------------------
+
   @override
   Widget build(BuildContext context) {
-    // Convert SENSOR map → alert list
+
+    /// ----- MAP SENSOR DATA TO ALERT LIST -----
     final List<Map<String, dynamic>> alerts = sensors.entries.map((e) {
       final name = e.key;
       final data = e.value;
@@ -24,11 +30,10 @@ class _RecentAlertState extends State<RecentAlert> {
       return {
         "location": name,
         "status": sensor["status"],
-        "level": "Flood Level: ${sensor['distance']} cm",
+        "level": "Flood Level: ${UnitConverter.cmToFeet(double.tryParse(sensor['floodHeight'].toString()) ?? 0).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')} ft",
       };
     }).toList();
 
-    // Filter only Warning & Danger alerts
     final activeAlerts = alerts
         .where((a) => a['status'] == 'Warning' || a['status'] == 'Danger')
         .toList();
@@ -64,6 +69,11 @@ class _RecentAlertState extends State<RecentAlert> {
     );
   }
 
+  // ----------------------------------------
+  // UI WIDGETS
+  // ----------------------------------------
+
+  /// ----- ALERT CARD -----
   Widget _alertCard(Map<String, dynamic> alert) {
     Color statusColor;
     IconData statusIcon;
@@ -94,7 +104,6 @@ class _RecentAlertState extends State<RecentAlert> {
       ),
       child: Row(
         children: [
-          // Left info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,7 +129,6 @@ class _RecentAlertState extends State<RecentAlert> {
             ),
           ),
 
-          // Right status icon
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(

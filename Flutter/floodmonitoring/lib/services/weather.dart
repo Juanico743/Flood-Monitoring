@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import 'global.dart';
+
 Future<Map<String, dynamic>?> loadWeather(double latitude, double longitude) async {
   try {
-    String apiKey = 'dfa37345e5d4c1fa93dcb18d17f07643';
+
     String uri =
-        'https://api.openweathermap.org/data/2.5/weather?lat=$latitude&lon=$longitude&units=metric&appid=$apiKey';
+        'https://api.openweathermap.org/data/2.5/weather?lat=$latitude&lon=$longitude&units=metric&appid=$weatherAPIKey';
 
     var res = await http.get(
       Uri.parse(uri),

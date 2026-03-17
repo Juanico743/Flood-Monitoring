@@ -56,7 +56,7 @@ class PolylineService {
       url,
       headers: {
         "Content-Type": "application/json",
-        "X-Goog-Api-Key": googleMapAPI,
+        "X-Goog-Api-Key": googleMapAPIKey,
         "X-Goog-FieldMask": "routes.polyline.encodedPolyline",
       },
       body: jsonEncode(payload),

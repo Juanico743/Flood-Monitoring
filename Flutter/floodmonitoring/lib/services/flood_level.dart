@@ -9,6 +9,7 @@ class BlynkService {
   Future<Map<String, dynamic>> fetchDistance(
       String token,
       String pin,
+      double height,
       ) async {
     try {
       final url = Uri.parse(
@@ -22,8 +23,7 @@ class BlynkService {
         final measuredDistance = double.tryParse(body);
 
         if (measuredDistance != null) {
-          // ✅ Compute flood height
-          double floodHeight = sensorHeight - measuredDistance;
+          double floodHeight = height - measuredDistance;
 
           // Prevent negative values
           if (floodHeight < 0) floodHeight = 0;
@@ -31,10 +31,6 @@ class BlynkService {
           final status = getStatusText(floodHeight);
           final lastUpdate = getCurrentTime();
 
-          print("📟 Blynk Pin: $pin");
-          print("📏 Sensor Distance: $measuredDistance cm");
-          print("🌊 Flood Height: $floodHeight cm");
-          print("⚠️ Status: $status");
 
           return {
             "distance": measuredDistance,

@@ -38,9 +38,12 @@ dependencies:
   delightful_toast: ^1.1.0
   flexible_polyline_dart: ^1.0.0
   vibration: ^3.1.4
+  flutter_compass: ^0.8.1
+  wakelock_plus: ^1.5.1
 
   flutter_map: ^8.2.2
   latlong2: ^0.9.0
+  shared_preferences: ^2.5.4
 
   lottie: ^3.3.1
 
@@ -82,6 +85,7 @@ flutter:
     - assets/images/vehicle/
     - assets/images/splash/
     - assets/images/layers/
+    - assets/images/stock/
     - assets/lottie/
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -116,7 +120,7 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: assets/images/logo.png
+  image_path: assets/images/byflo-app-icon.png
 
 
 flutter_native_splash:
@@ -124,13 +128,11 @@ flutter_native_splash:
   ios: true
   web: false
 
-  color: "#046EEC"
-  background_image: assets/images/splash/splash-background.png
+  color: "#E9F3FF"
   image: assets/images/splash/splash-logo.png
   branding: assets/images/splash/splash-logo-name.png
 
   android_12:
-    color: "#046EEC"
-    background_image: assets/images/splash/splash-background.png
+    color: "#E9F3FF"
     image: assets/images/splash/splash-logo.png
     branding: assets/images/splash/splash-logo-name.png

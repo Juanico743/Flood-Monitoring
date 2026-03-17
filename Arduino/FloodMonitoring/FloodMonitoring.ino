@@ -1,19 +1,23 @@
 #define BLYNK_TEMPLATE_ID "TMPL6gAdg04Tj"
 #define BLYNK_TEMPLATE_NAME "Actual Distance"
 #define BLYNK_AUTH_TOKEN "rDsIi--IkEDcdOVLSBXh2DvfusmwPSFc"
+// A02YYUW TX -> ESP32 RX pin
+#define RXD2 16
+#define DISTANCE_VPIN V0
+
 
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
 
-// char ssid[] = "Sheeesh";
-// char pass[] = "_UmayGad_";
+// char ssid[] = "🐞 フアニコ 🐞";
+// char pass[] = "Juanico@19761964";
 
-char ssid[] = "🐞 フアニコ 🐞";
-char pass[] = "Juanico@19761964";
+char ssid[] = "🐰フアニコ🐰";
+char pass[] = "4321@ocinauJ";
 
-// A02YYUW TX -> ESP32 RX pin
-#define RXD2 16
+
+
 
 BlynkTimer timer;
 
@@ -32,7 +36,7 @@ void sendDistance() {
         Serial.println(" cm");
 
         // Send to Blynk
-        Blynk.virtualWrite(V0, distance);
+        Blynk.virtualWrite(DISTANCE_VPIN, distance);
       } else {
         Serial.println("Checksum error");
       }

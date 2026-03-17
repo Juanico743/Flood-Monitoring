@@ -6,10 +6,13 @@ import 'package:floodmonitoring/pages/recent_alert.dart';
 import 'package:floodmonitoring/pages/rescue_call.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  WakelockPlus.enable();
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

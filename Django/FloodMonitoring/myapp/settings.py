@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-vqj0l+04o9^whgbbkwfq7&d8n)tig*@60s_)gw_#b7&vad)ou9
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.1.13', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['192.168.1.13', '192.168.1.7', '192.168.0.100', 'localhost']
 
 
 # Application definition
@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'rest_framework',
     'api',
 ]
 
@@ -101,6 +102,21 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'flood_monitoring_db',
+        'USER': 'root',                
+        'PASSWORD': 'Admin@1234',    
+        'HOST': 'localhost',
+        'PORT': '3306',
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        },
+    }
+}
 
 
 MEDIA_URL = '/media/'

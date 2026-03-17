@@ -6,12 +6,13 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 
 
-String serverUri = "http://192.168.1.13:8000";
+const String serverUri = "http://192.168.1.7:8000";
 
 /// API KEYS
-const String googleMapAPI = "AIzaSyAMamxCz-N-wiGSq4-DfVpD9zOpP_GZ_9o";
-const hereAPIKey = "TiHkVyYjkDXokfAstiAx97Iqttb-eqUTd1vCq1aiqhE";
-const String mapboxAPI = "pk.eyJ1IjoidmluY2VudGplcnJ5anVhbmljbyIsImEiOiJjbWlyanl6MDMwMmRuM2NzZnAzZWRtMGRzIn0.8zbipe-6rXc1C5u0fP15aQ";
+const String googleMapAPIKey = "AIzaSyAMamxCz-N-wiGSq4-DfVpD9zOpP_GZ_9o";
+const String hereAPIKey = "TiHkVyYjkDXokfAstiAx97Iqttb-eqUTd1vCq1aiqhE";
+const String mapboxAPIKey = "pk.eyJ1IjoidmluY2VudGplcnJ5anVhbmljbyIsImEiOiJjbWlyanl6MDMwMmRuM2NzZnAzZWRtMGRzIn0.8zbipe-6rXc1C5u0fP15aQ";
+const String weatherAPIKey = 'dfa37345e5d4c1fa93dcb18d17f07643';
 
 /// Testing mode
 bool testingMode = false;
@@ -20,7 +21,8 @@ bool settingPin = true;
 /// Global Variable
 Position? currentPosition;
 String selectedVehicle = "";
-int sensorHeight = 200;
+int sensorHeight = 200; //Centimeter
+String sensorViewInfo = "";
 
 /// Map Variable
 bool searchStartLocation = false;
@@ -55,7 +57,9 @@ Map<String, Map<String, dynamic>> sensors = {
     "position": const LatLng(14.601570218473059, 121.00789117225852),
     "token": "rDsIi--IkEDcdOVLSBXh2DvfusmwPSFc",
     "pin": "V0",
-    "radius": 100.0,
+    "radius": 100.0, /// Meters
+    "height": 100.00, /// cm
+    "location": "No Location",
     "sensorData": {
       "distance": 0.0,
       "floodHeight": 0.0,
@@ -74,6 +78,8 @@ Map<String, Map<String, dynamic>> sensors = {
     "token": "rDsIi--IkEDcdOVLSBXh2DvfusmwPSFc",
     "pin": "V1",
     "radius": 100.0,
+    "height": 100.00,
+    "location": "No Location",
     "sensorData": {
       "distance": 0.0,
       "floodHeight": 0.0,
@@ -92,6 +98,8 @@ Map<String, Map<String, dynamic>> sensors = {
     "token": "rDsIi--IkEDcdOVLSBXh2DvfusmwPSFc",
     "pin": "V2",
     "radius": 100.0,
+    "height": 100.00,
+    "location": "No Location",
     "sensorData": {
       "distance": 0.0,
       "floodHeight": 0.0,
@@ -110,7 +118,7 @@ Map<String, Map<String, dynamic>> sensors = {
 
 /// Link: https://interaksyon.philstar.com/trends-spotlights/2024/09/04/282826/mmda-flood-gauge-system-travelers-motorists/amp/
 /// Link: https://www.carmudi.com.ph/journal/5-tips-gauge-safe-drive-flood/
-final List<Map<String, dynamic>> vehicleFloodThresholds = [
+List<Map<String, dynamic>> vehicleFloodThresholds = [
   {
     "vehicle": "",
     // 0" to 10" (Gutter/Half-knee)

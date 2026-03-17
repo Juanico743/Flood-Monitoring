@@ -5,6 +5,8 @@ import 'package:floodmonitoring/services/flood_level.dart';
 import 'package:floodmonitoring/services/global.dart';
 import 'package:floodmonitoring/services/location.dart';
 import 'package:floodmonitoring/services/polyline.dart';
+import 'package:floodmonitoring/services/sensor_service.dart';
+import 'package:floodmonitoring/services/threshold_service.dart';
 import 'package:floodmonitoring/services/url_tile_provider.dart';
 import 'package:floodmonitoring/services/weather.dart';
 import 'package:floodmonitoring/utils/converters.dart';
@@ -15,6 +17,7 @@ import 'package:floodmonitoring/widgets/search_popup.dart';
 import 'package:floodmonitoring/widgets/toast.dart';
 import 'package:floodmonitoring/widgets/vehicle_info_popup.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_compass/flutter_compass.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:delightful_toast/delight_toast.dart';
@@ -33,8 +36,10 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   late GoogleMapController mapController;
 
-  // Example location (Antipolo)
-  final LatLng _center = const LatLng(14.6255, 121.1245);
+  final ThresholdService _thresholdService = ThresholdService();
+  final SensorService _sensorService = SensorService();
+
+  final LatLng _center = const LatLng(14.600775714641369, 121.00852660400322);
 
   final Set<Marker> _markers = {};
 
@@ -140,50 +145,124 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
 
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   showFullScreenLottiePopup(context); // ✅ safe here
-    // });
+    selectedVehicle = "";
+    _updateTime();
 
-      setState(() {
-        selectedVehicle = "";
-      });
+    _initializeEverything();
 
-      ///Remove
-      // WidgetsBinding.instance.addPostFrameCallback((_) {
-      //   showVehicleModal();
-      // });
+    _startTimer();
+    startLocationUpdates();
+  }
 
-      fetchDataForAllSensors();
-      _loadCurrentLocation();
-      _updateTime();
-      //_drawAvoidZones();
-      startLocationUpdates();
+  Future<void> _initializeEverything() async {
+    loadSensors();
+    _loadThresholds();
+    fetchDataForAllSensors();
 
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-        _updateTime();
+    await _loadMarkerIcon();
 
-        _secondsCounter++;
+    await _loadCurrentLocation();
 
-        if (_secondsCounter >= fetchIntervalMinutes * 60) {
-          fetchDataForAllSensors();
-          _secondsCounter = 0;
-        }
+    if (mounted) {
+      _addUserMarker();
+
+      // Delayed init
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) _initCompass();
       });
     }
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+
+      _updateTime();
+      _secondsCounter++;
+
+      if (_secondsCounter >= fetchIntervalMinutes * 60) {
+        fetchDataForAllSensors();
+        _secondsCounter = 0;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _positionStream?.cancel();
+    _timer?.cancel();
+    super.dispose();
+  }
+
+
+  Future<void> loadSensors() async {
+    var tempSensors = await _sensorService.loadSensorsList();
+
+    setState(() {
+      sensors = tempSensors;
+      _buildSensorMarkers();
+    });
+  }
+
+  Future<void> _loadThresholds() async {
+    List<Map<String, dynamic>> data = await _thresholdService.loadThresholdsList();
+
+    setState(() {
+      vehicleFloodThresholds = data;
+    });
+  }
+
+// Create this new helper function
+  Future<void> _buildSensorMarkers() async {
+    final BitmapDescriptor sensorIcon = await BitmapDescriptor.fromAssetImage(
+      const ImageConfiguration(size: Size(48, 48)),
+      'assets/images/sensor_location.png',
+    );
+
+    setState(() {
+      _markers.clear();
+      sensors.forEach((id, sensor) {
+        _markers.add(
+          Marker(
+            markerId: MarkerId(id),
+            position: sensor['position'], // This will now use the correct LatLng type
+            icon: sensorIcon,
+            onTap: () => _onSensorTap(id, sensor),
+          ),
+        );
+      });
+    });
+  }
+
 
   Position? _lastUpdatedPosition;
   StreamSubscription<Position>? _positionStream;
 
   Future<void> _loadCurrentLocation() async {
-    Position? position = await LocationService.getCurrentLocation();
-    if (position != null) {
-      setState(() {
-        currentPosition = position;
-      });
-      getWeather();
+    print("_loadCurrentLocation called");
+
+    Position? lastKnown = await Geolocator.getLastKnownPosition();
+
+    if (lastKnown != null && mounted) {
+      setState(() => currentPosition = lastKnown);
       _addUserMarker();
-    } else {
-      print('Could not get location.');
+      getWeather();
+    }
+
+    try {
+      Position freshPosition = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.low,
+        timeLimit: const Duration(seconds: 5),
+      );
+
+      if (mounted) {
+        setState(() => currentPosition = freshPosition);
+        _addUserMarker();
+        getWeather();
+        print("currentPosition: $currentPosition");
+      }
+    } catch (e) {
+      print('Fresh location timeout or error: $e');
     }
   }
 
@@ -207,6 +286,7 @@ class _MapScreenState extends State<MapScreen> {
         iconCode = weather['iconCode'];
       });
     }
+    print('My Weather: $weather');
   }
 
 
@@ -238,9 +318,6 @@ class _MapScreenState extends State<MapScreen> {
   // }
 
 
-  LatLng? _previousLatLng;
-  bool _isAnimatingMarker = false;
-
   void startLocationUpdates() {
     const LocationSettings locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
@@ -254,12 +331,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
 
-  @override
-  void dispose() {
-    _positionStream?.cancel();
-    _timer?.cancel();
-    super.dispose();
-  }
+
 
 
   void _updatePosition(Position position) {
@@ -289,7 +361,10 @@ class _MapScreenState extends State<MapScreen> {
 
     _addUserMarker();
 
-    if (savedStartPosition == null && savedPinPosition != null) {
+    if (savedStartPosition == null
+        && savedPinPosition != null
+        && tappedPosition == null
+        && startPosition == null ) {
       _drawRoute(userLatLng, savedPinPosition!);
     }
 
@@ -374,9 +449,10 @@ class _MapScreenState extends State<MapScreen> {
     if (sensor == null) return;
 
     final String token = sensor['token'];
-    final String pin = sensor['pin']; // ✅ NEW
+    final String pin = sensor['pin'];
+    final double height = sensor['height'];
 
-    final data = await BlynkService().fetchDistance(token, pin);
+    final data = await BlynkService().fetchDistance(token, pin, height);
 
     setState(() {
       sensors[sensorId]!['sensorData'] = data;
@@ -393,10 +469,11 @@ class _MapScreenState extends State<MapScreen> {
 
     sensors.forEach((sensorId, sensor) {
       final String token = sensor['token'];
-      final String pin = sensor['pin']; // ✅ NEW
+      final String pin = sensor['pin'];
+      final double height = sensor['height'];
 
       futures.add(
-        BlynkService().fetchDistance(token, pin).then((data) {
+        BlynkService().fetchDistance(token, pin, height).then((data) {
           setState(() {
             sensors[sensorId]!['sensorData'] = data;
           });
@@ -502,47 +579,65 @@ class _MapScreenState extends State<MapScreen> {
   Color _getStatusColor(String status) {
     switch (status) {
       case "Safe":
-        return color_safe;
+        return colorSafe;
       case "Warning":
-        return color_warning;
+        return colorWarning;
       case "Danger":
-        return color_danger;
+        return colorDanger;
       default:
         return Colors.black;
     }
   }
 
+  double _userHeading = 0;
+  double _lastUpdateHeading = 0;
+  double _mapBearing = 0.0;
+
+  BitmapDescriptor? userIcon;
+
+  Future<void> _loadMarkerIcon() async {
+    userIcon = await BitmapDescriptor.fromAssetImage(
+      const ImageConfiguration(size: Size(48, 48)),
+      'assets/images/user_location.png',
+    );
+  }
+
+  void _initCompass() {
+    FlutterCompass.events?.listen((CompassEvent event) {
+      double? currentHeading = event.heading;
+      if (currentHeading == null) return;
+
+      // Use the raw heading. Do NOT subtract _mapBearing.
+      if ((currentHeading - _lastUpdateHeading).abs() > 2) {
+        if (mounted) {
+          _userHeading = currentHeading; // Raw compass value
+          _lastUpdateHeading = currentHeading;
+          _addUserMarker();
+        }
+      }
+    });
+  }
+
   /// Add Users Marker
-  void _addUserMarker() async {
-    if (currentPosition == null) return;
+  void _addUserMarker() {
+    // Check if position and icon are ready
+    if (currentPosition == null || userIcon == null) return;
 
     final userLatLng = LatLng(
       currentPosition!.latitude,
       currentPosition!.longitude,
     );
 
-    // Load custom image as marker
-    final BitmapDescriptor userIcon = await BitmapDescriptor.fromAssetImage(
-      const ImageConfiguration(size: Size(48, 48)), // size of your pin
-      'assets/images/user_location.png',
-    );
-
     setState(() {
-      // Remove old user marker
-      _markers.removeWhere((m) => m.markerId.value == 'user');
-
-      // Remove old circles (optional)
-      _circles.removeWhere((c) =>
-      c.circleId.value == 'user_small' || c.circleId.value == 'user_medium');
-
-      // Add user marker with custom image
+      // Adding a marker with the same ID automatically replaces the old one
       _markers.add(
         Marker(
           markerId: const MarkerId('user'),
           position: userLatLng,
-          icon: userIcon, // <-- custom image
+          icon: userIcon!,
           anchor: const Offset(0.5, 0.5),
-          infoWindow: const InfoWindow(title: 'Your Location'),
+          rotation: _userHeading, // Simply use the compass heading
+          flat: true,
         ),
       );
     });
@@ -557,21 +652,30 @@ class _MapScreenState extends State<MapScreen> {
     );
 
     setState(() {
-      // Remove all sensors first
-      _markers.removeWhere((m) => sensors.containsKey(m.markerId.value));
+      _markers.removeWhere((m) => sensors.containsKey(m.markerId.value.replaceAll('_labeled', '')));
 
-      // If showAllSensors == false → stop here (no markers added)
       if (!showAllSensors) return;
 
-      // Otherwise add all sensors again
       sensors.forEach((id, sensor) {
+        final String status = sensor['sensorData']['status'];
+
+        if (showCriticalSensors) {
+          if (status != 'Warning' && status != 'Danger') {
+            return;
+          }
+        }
+
+        final String uniqueId = showSensorLabels ? "${id}_labeled" : id;
+
         _markers.add(
           Marker(
-            markerId: MarkerId(id),
+            markerId: MarkerId(uniqueId),
             position: sensor['position'],
             icon: sensorIcon,
             anchor: const Offset(0.5, 0.5),
-            infoWindow: showSensorLabels ? InfoWindow(title: id) : InfoWindow.noText,
+            infoWindow: showSensorLabels
+                ? InfoWindow(title: id)
+                : InfoWindow.noText,
             onTap: () => _onSensorTap(id, sensor),
           ),
         );
@@ -606,6 +710,7 @@ class _MapScreenState extends State<MapScreen> {
   /// Reset map orientation (bearing & tilt)
   void _onCameraMove(CameraPosition position) {
     _lastPosition = position;
+    _mapBearing = position.bearing;
   }
 
   void _resetOrientation() async {
@@ -815,7 +920,11 @@ class _MapScreenState extends State<MapScreen> {
 
     });
 
-    if (savedStartPosition != null) {
+    if (savedStartPosition != null && savedPinPosition == null) {
+      setState(() {
+        _polylines.clear();
+      });
+    } else if (savedStartPosition != null && savedPinPosition != null) {
       _drawRoute(savedStartPosition!, savedPinPosition!);
     }else if (savedPinMarker != null && currentPosition != null) {
       _drawRoute(
@@ -936,14 +1045,30 @@ class _MapScreenState extends State<MapScreen> {
 
     setState(() {
       _polylines.clear();
-      _polylines.add(
+
+      // Use .addAll instead of .add
+      _polylines.addAll([
+        // Background (Border)
         Polyline(
-          polylineId: const PolylineId("route"),
+          polylineId: const PolylineId("route_border"),
           points: route,
-          color: Colors.blue,
-          width: 5,
+          color: colorPolylineMain,
+          width: 6,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          jointType: JointType.round,
         ),
-      );
+        // Foreground (Main Color)
+        Polyline(
+          polylineId: const PolylineId("route_main"),
+          points: route,
+          color: colorPolylineBack,
+          width: 4,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          jointType: JointType.round,
+        ),
+      ]);
     });
   }
 
@@ -963,11 +1088,8 @@ class _MapScreenState extends State<MapScreen> {
     );
 
     if (result != null) {
-      final LatLng position = result['latLng'];
+      final LatLng? position = result['latLng']; // Might be null for Current Location
       final String name = result['name'];
-
-      print('Selected place: $name');
-      print('Coordinates: ${position.latitude}, ${position.longitude}');
 
       // Create pin icon
       final BitmapDescriptor pinIcon = await BitmapDescriptor.fromAssetImage(
@@ -975,13 +1097,13 @@ class _MapScreenState extends State<MapScreen> {
         'assets/images/selected_location.png',
       );
 
-
+      // --- CASE 1: SEARCH END LOCATION (Destination) ---
       if (searchEndLocation) {
+        if (position == null) return; // Usually, destination requires a specific pin
+
         setState(() {
-          // Remove previous tapped marker
           if (tappedMarker != null) _markers.remove(tappedMarker);
 
-          // Add new tapped marker
           tappedMarker = Marker(
             markerId: const MarkerId('tapped_pin'),
             position: position,
@@ -991,13 +1113,8 @@ class _MapScreenState extends State<MapScreen> {
           _markers.add(tappedMarker!);
           tappedPosition = position;
 
-          // Set currentPlace (temporary)
-          currentPlace = {
-            "name": name,
-            "location": position,
-          };
+          currentPlace = {"name": name, "location": position};
 
-          // Show confirmation sheet
           showPinConfirmationSheet = true;
           showDirectionSheet = false;
           showSensorSheet = false;
@@ -1005,121 +1122,127 @@ class _MapScreenState extends State<MapScreen> {
           showRerouteConfirmationSheet = false;
         });
 
-        if (savedStartPosition != null) {
-
-          LatLng start = savedStartPosition!;
-          LatLng destination = position;
-
-          _drawRoute(start, destination);
-
-          // Create bounds covering both points
-          LatLngBounds bounds = LatLngBounds(
-            southwest: LatLng(
-              min(start.latitude, destination.latitude),
-              min(start.longitude, destination.longitude),
-            ),
-            northeast: LatLng(
-              max(start.latitude, destination.latitude),
-              max(start.longitude, destination.longitude),
-            ),
-          );
-
-          // Animate camera to fit both markers
-          mapController.animateCamera(
-            CameraUpdate.newLatLngBounds(bounds, 120), // padding
-          );
-        } else if (currentPosition != null) {
-          LatLng userPosition = LatLng(currentPosition!.latitude, currentPosition!.longitude);
-
-          // Draw polyline to temporary/current place
-          _drawRoute(userPosition, position);
-
-          // Zoom to fit both locations
-          LatLngBounds bounds = LatLngBounds(
-            southwest: LatLng(
-              min(userPosition.latitude, position.latitude),
-              min(userPosition.longitude, position.longitude),
-            ),
-            northeast: LatLng(
-              max(userPosition.latitude, position.latitude),
-              max(userPosition.longitude, position.longitude),
-            ),
-          );
-
-          mapController.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
-        }
+        // Drawing logic for destination...
+        _handleDestinationCamera(position);
       }
+
+      // --- CASE 2: SEARCH START LOCATION (Starting Point) ---
       else if (searchStartLocation) {
-        setState(() {
-          // Remove previous start Marker
-          if (startMarker != null) _markers.remove(startMarker);
 
-          // Add new start marker
-          startMarker = Marker(
-            markerId: const MarkerId('start_pin'),
-            position: position,
-            icon: pinIcon,
-            anchor: const Offset(0.5, 1.0),
-          );
-          _markers.add(startMarker!);
-          startPosition = position;
+        // IF "CURRENT LOCATION" WAS SELECTED
+        if (position == null) {
+          setState(() {
+            // Reset everything related to custom start
+            savedStartPosition = null;
+            startPosition = null;
 
-          // Set currentPlace (temporary)
-          startPlace = {
-            "name": name,
-            "location": position,
-          };
+            if (startMarker != null) {
+              _markers.remove(startMarker);
+              startMarker = null;
+            }
+            if (savedStartMarker != null) {
+              _markers.remove(savedStartMarker);
+              savedStartMarker = null;
+            }
 
-          // Show confirmation sheet
-          showPinConfirmationSheet = true;
-          showDirectionSheet = false;
-          showSensorSheet = false;
-          showSensorSettingsSheet = false;
-          showRerouteConfirmationSheet = false;
-        });
+            startPlace = {
+              "name": "Current Location",
+              "location": LatLng(currentPosition!.latitude, currentPosition!.longitude),
+            };
 
-        print("Saved Start: $savedStartPosition");
-        print("Saved Destination: $savedPinPosition");
+            savedStartPlace = {
+              "name": "",
+              "location": LatLng(0.0, 0.0),
+            };
+
+            // Redraw from live GPS to destination
+            if (savedPinPosition != null) {
+              _drawRoute(
+                LatLng(currentPosition!.latitude, currentPosition!.longitude),
+                savedPinPosition!,
+              );
+            }
+          });
+
+          if (savedPinPosition != null){
+            _handleDestinationCamera(savedPinPosition!);
+          } else {
+            _goToUser();
+          }
 
 
-        if (savedPinPosition == null) {
-          mapController.animateCamera(
-            CameraUpdate.newCameraPosition(
-              CameraPosition(
-                target: position,
-                zoom: 15,
-              ),
-            ),
-          );
-        } else if (savedPinPosition != null) {
-
-          LatLng start = position;
-          LatLng destination = savedPinPosition!;
-
-          _drawRoute(position, destination);
-
-          // Create bounds covering both points
-          LatLngBounds bounds = LatLngBounds(
-            southwest: LatLng(
-              min(start.latitude, destination.latitude),
-              min(start.longitude, destination.longitude),
-            ),
-            northeast: LatLng(
-              max(start.latitude, destination.latitude),
-              max(start.longitude, destination.longitude),
-            ),
-          );
-
-          // Animate camera to fit both markers
-          mapController.animateCamera(
-            CameraUpdate.newLatLngBounds(bounds, 120), // padding
-          );
         }
+        // IF A SPECIFIC PLACE WAS SELECTED
+        else {
+          setState(() {
+            if (startMarker != null) _markers.remove(startMarker);
 
+            startMarker = Marker(
+              markerId: const MarkerId('start_pin'),
+              position: position,
+              icon: pinIcon,
+              anchor: const Offset(0.5, 1.0),
+            );
+            _markers.add(startMarker!);
 
+            // CRITICAL: Update the temp variable that the Confirm button uses
+            startPosition = position;
+
+            startPlace = {
+              "name": name,
+              "location": position,
+            };
+
+            showPinConfirmationSheet = true;
+            showDirectionSheet = false;
+            showSensorSheet = false;
+            showSensorSettingsSheet = false;
+            showRerouteConfirmationSheet = false;
+          });
+
+          // Use 'position' directly here to ensure the line connects to the NEW pin
+          if (savedPinPosition != null) {
+            _drawRoute(position, savedPinPosition!);
+
+            LatLngBounds bounds = LatLngBounds(
+              southwest: LatLng(
+                min(position.latitude, savedPinPosition!.latitude),
+                min(position.longitude, savedPinPosition!.longitude),
+              ),
+              northeast: LatLng(
+                max(position.latitude, savedPinPosition!.latitude),
+                max(position.longitude, savedPinPosition!.longitude),
+              ),
+            );
+            mapController.animateCamera(CameraUpdate.newLatLngBounds(bounds, 120));
+          } else {
+            mapController.animateCamera(
+              CameraUpdate.newCameraPosition(
+                CameraPosition(target: position, zoom: 15),
+              ),
+            );
+          }
+        }
       }
+    }
+  }
 
+// Helper for destination camera logic to keep openPlaceSearch readable
+  void _handleDestinationCamera(LatLng destination) {
+    LatLng? start;
+    if (savedStartPosition != null) {
+      start = savedStartPosition!;
+    } else if (currentPosition != null) {
+      start = LatLng(currentPosition!.latitude, currentPosition!.longitude);
+    }
 
+    if (start != null) {
+      _drawRoute(start, destination);
+      LatLngBounds bounds = LatLngBounds(
+        southwest: LatLng(min(start.latitude, destination.latitude), min(start.longitude, destination.longitude)),
+        northeast: LatLng(max(start.latitude, destination.latitude), max(start.longitude, destination.longitude)),
+      );
+      mapController.animateCamera(CameraUpdate.newLatLngBounds(bounds, 120));
     }
   }
 
@@ -1194,7 +1317,7 @@ class _MapScreenState extends State<MapScreen> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
               decoration: BoxDecoration(
-                color: isSelected ? color1 : Colors.white,
+                color: isSelected ? colorPrimaryMid : Colors.white,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
@@ -1203,7 +1326,7 @@ class _MapScreenState extends State<MapScreen> {
                     iconPath,
                     width: 28,
                     height: 28,
-                    color: isSelected ? Colors.white : color2,
+                    color: isSelected ? Colors.white : colorPrimaryDeep,
                     colorBlendMode: BlendMode.srcIn,
                   ),
                   const SizedBox(width: 12),
@@ -1498,7 +1621,7 @@ class _MapScreenState extends State<MapScreen> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: color1,
+                    backgroundColor: colorPrimaryMid,
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -1657,7 +1780,11 @@ class _MapScreenState extends State<MapScreen> {
                                     height: 50,
                                     child: Row(
                                       children: [
-                                        Icon(Icons.my_location, size: 20, color: colorPrimary),
+                                        Icon(
+                                          (savedStartPosition == null) ? Icons.my_location : Icons.location_on,
+                                          size: 20,
+                                          color: (savedStartPosition == null) ? colorPrimary : colorDanger
+                                        ),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Text(
@@ -1666,6 +1793,8 @@ class _MapScreenState extends State<MapScreen> {
                                               : (savedStartPosition != null
                                               ? "${savedStartPosition!.latitude.toStringAsFixed(5)}, ${savedStartPosition!.longitude.toStringAsFixed(5)}"
                                               : "Current Location"),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
                                             style: const TextStyle(
                                               fontFamily: 'AvenirNext',
                                               fontSize: 15,
@@ -1703,12 +1832,13 @@ class _MapScreenState extends State<MapScreen> {
                                                 : (savedPinPosition != null
                                                 ? "${savedPinPosition!.latitude.toStringAsFixed(5)}, ${savedPinPosition!.longitude.toStringAsFixed(5)}"
                                                 : "Select Destination"),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
                                             style: const TextStyle(
                                               fontFamily: 'AvenirNext',
                                               fontSize: 15,
                                               fontWeight: FontWeight.w600,
                                             ),
-                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
                                         Icon(Icons.chevron_right, color: Colors.grey[500]),
@@ -1845,7 +1975,10 @@ class _MapScreenState extends State<MapScreen> {
                             description: 'Display all sensors on the map',
                             value: showAllSensors,
                             onChanged: (val) {
-                              setState(() => showAllSensors = val);
+                              setState(() {
+                                showAllSensors = val;
+                                showCriticalSensors = false;
+                              });
                               _refreshSensorMarkers();
                             },
                           ),
@@ -1854,14 +1987,24 @@ class _MapScreenState extends State<MapScreen> {
                             title: 'Show Sensor Range / Coverage',
                             description: 'Display sensor coverage area',
                             value: showSensorCoverage,
-                            onChanged: (val) => setState(() => showSensorCoverage = val),
+                            onChanged: (val) {
+                              setState(() {
+                                showSensorCoverage = val;
+                              });
+                            }
                           ),
 
                           _sensorToggleCard(
                             title: 'Alerted / Critical Sensors Only',
                             description: 'Show only sensors with alerts',
                             value: showCriticalSensors,
-                            onChanged: (val) => setState(() => showCriticalSensors = val),
+                            onChanged: (val) {
+                              setState(() {
+                                showCriticalSensors = val;
+                                showAllSensors = !val;
+                              });
+                              _refreshSensorMarkers();
+                            },
                           ),
 
                           _sensorToggleCard(
@@ -1869,7 +2012,9 @@ class _MapScreenState extends State<MapScreen> {
                             description: 'Show sensor names or IDs on the map',
                             value: showSensorLabels,
                             onChanged: (val) {
-                              setState(() => showSensorLabels = val);
+                              setState(() {
+                                showSensorLabels = val;
+                              });
                               _refreshSensorMarkers();
                             },
                           ),
@@ -1950,6 +2095,8 @@ class _MapScreenState extends State<MapScreen> {
                           ? sensors[selectedSensorId]!
                           : null;
                       final data = sensor?['sensorData'];
+                      final location = sensor?['location'];
+
 
                       return Column(
                         mainAxisSize: MainAxisSize.min,
@@ -1971,7 +2118,7 @@ class _MapScreenState extends State<MapScreen> {
                           // HEADER
                           Row(
                             children: [
-                              Icon(Icons.sensors, size: 32, color: color1), // primary theme
+                              Icon(Icons.sensors, size: 32, color: colorPrimaryMid), // primary theme
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
@@ -2016,11 +2163,11 @@ class _MapScreenState extends State<MapScreen> {
                             child: Column(
                               children: [
                                 _infoRow("Sensor ID", selectedSensorId ?? "-"),
-                                _infoRow("Location", "Ortigas Ave"),
+                                _infoRow("Location", "$location"),
                                 _infoRow(
                                     "Flood Height",
                                     data?['floodHeight'] != null
-                                        ? "${UnitConverter.cmToInches(double.tryParse(data!['floodHeight'].toString()) ?? 0).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')} in"
+                                        ? "${UnitConverter.cmToFeet(double.tryParse(data!['floodHeight'].toString()) ?? 0).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')} ft"
                                         : "-"
                                 ),
                                 _infoRow("Distance", "${data?['distance'] ?? "-"} cm"),
@@ -2041,7 +2188,14 @@ class _MapScreenState extends State<MapScreen> {
                             width: double.infinity,
                             child: primaryButton(
                               text: "View Full Details",
-                              onTap: () => Navigator.pushNamed(context, '/info'),
+                              onTap: () {
+
+                                setState(() {
+                                  sensorViewInfo = selectedSensorId!;
+                                });
+                                Navigator.pushNamed(context, '/info');
+
+                              },
                             ),
                           ),
 
@@ -2180,6 +2334,10 @@ class _MapScreenState extends State<MapScreen> {
                                   text: "CANCEL",
                                   onTap: () {
                                     cancelPinSelection();
+                                    _goToUser();
+                                    setState(() {
+                                      showPinConfirmationSheet = false;
+                                    });
                                   },
                                 ),
                               ),
@@ -2223,7 +2381,9 @@ class _MapScreenState extends State<MapScreen> {
                                       }
 
                                       showPinConfirmationSheet = false;
+                                      showDirectionSheet = true;
                                       _circles.removeWhere((c) => c.circleId.value.startsWith('sensor'));
+                                      _goToUser();
 
                                     });
                                   },
@@ -2335,7 +2495,7 @@ class _MapScreenState extends State<MapScreen> {
                           // HEADER
                           Row(
                             children: [
-                              Icon(Icons.alt_route_rounded, size: 30, color: color1),
+                              Icon(Icons.alt_route_rounded, size: 30, color: colorPrimaryMid),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
@@ -2441,7 +2601,7 @@ class _MapScreenState extends State<MapScreen> {
                   },
                   label: 'Directions',
                   imagePath: 'assets/images/icons/pin.png',
-                  iconColor: (showDirectionSheet) ? color1 : color2,
+                  iconColor: (showDirectionSheet) ? colorPrimaryMid : colorPrimaryDeep,
                 ),
                 bottomButton(
                   onTap: () {
@@ -2457,7 +2617,7 @@ class _MapScreenState extends State<MapScreen> {
                   },
                   label: 'Sensor',
                   imagePath: 'assets/images/icons/sensor.png',
-                  iconColor: (showSensorSettingsSheet) ? color1 : color2,
+                  iconColor: (showSensorSettingsSheet) ? colorPrimaryMid : colorPrimaryDeep,
                 ),
                 bottomButton(
                   onTap: () {
@@ -2475,15 +2635,14 @@ class _MapScreenState extends State<MapScreen> {
                   },
                   label: 'Alerts',
                   imagePath: 'assets/images/icons/exclamation.png',
-                  iconColor: (showRerouteConfirmationSheet) ? color1 : (displayAlert) ? Colors.red : color2,
-                  buttonColor: (showRerouteConfirmationSheet) ? Colors.white : (displayAlert) ? color_alert : Colors.white,
+                  iconColor: (showRerouteConfirmationSheet) ? colorPrimaryMid : (displayAlert) ? Colors.red : colorPrimaryDeep,
+                  buttonColor: (showRerouteConfirmationSheet) ? Colors.white : (displayAlert) ? colorAlertBg : Colors.white,
                 ),
               ],
             ),
           ),
 
           ///Burger menu
-
           Positioned(
             top: 20,
             left: 10,
@@ -2504,13 +2663,14 @@ class _MapScreenState extends State<MapScreen> {
 
                       showMainSheet = true;
                       tempSelectedVehicle = selectedVehicle;
+                      cancelPinSelection();
                     });
                   },
                   child: Container(
                     height: 40,
                     width: 40,
                     decoration: BoxDecoration(
-                      color: color1,
+                      color: colorPrimaryMid,
                       borderRadius: BorderRadius.circular(50),
                     ),
                     child: Center(
@@ -3076,7 +3236,7 @@ class _MapScreenState extends State<MapScreen> {
             height: 90,
             width: 90,
             decoration: BoxDecoration(
-              color: Colors.blue[50],
+              color: colorBackground,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: isSelected ? Colors.blue : Colors.transparent, width: 2),
               gradient: isSelected ? LinearGradient(
@@ -3114,7 +3274,7 @@ class _MapScreenState extends State<MapScreen> {
     required VoidCallback onTap,
     required String imagePath,
     required String label,
-    Color iconColor = color2,
+    Color iconColor = colorPrimaryDeep,
     Color buttonColor = Colors.white,
   }) {
     bool isPressed = false;
@@ -3188,17 +3348,17 @@ class _MapScreenState extends State<MapScreen> {
         height: 40,
         width: 40,
         decoration: BoxDecoration(
-          color: (selectedVehicle == name) ? color1 : Colors.white,
-          borderRadius: BorderRadius.circular(40 / 2), // perfect circle
+          color: (selectedVehicle == name) ? colorPrimaryMid : Colors.white,
+          borderRadius: BorderRadius.circular(40 / 2),
         ),
         child: Center(
           child: Image.asset(
             imagePath,
-            width: 25, // image slightly smaller than container
+            width: 25,
             height: 25,
             fit: BoxFit.contain,
-            color: (selectedVehicle == name) ? Colors.white : color2, // apply green tint
-            colorBlendMode: BlendMode.srcIn, // ensures the color replaces the original
+            color: (selectedVehicle == name) ? Colors.white : colorPrimaryDeep,
+            colorBlendMode: BlendMode.srcIn,
           ),
         ),
       ),

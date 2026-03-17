@@ -36,6 +36,18 @@ class Sensor(models.Model):
     token = models.CharField(max_length=255)
     pin = models.CharField(max_length=10)
     radius = models.FloatField(default=100.0)
+    height = models.FloatField(default=1.0)
 
     def __str__(self):
         return f"{self.sensor_id} - {self.location_name}"
+
+        
+
+# Model to represent emergency contacts for flood situations
+class EmergencyContact(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    phone_number = models.CharField(max_length=20)
+
+    def __str__(self):
+        return self.name

@@ -96,7 +96,7 @@ class VehicleInfoPopup {
                                   height: 42,
                                   decoration: BoxDecoration(
                                     color: selectedVehicle == "Motorcycle"
-                                        ? color1
+                                        ? colorPrimaryMid
                                         : Colors.grey[200],
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -126,7 +126,7 @@ class VehicleInfoPopup {
                                   height: 42,
                                   decoration: BoxDecoration(
                                     color: selectedVehicle == "Bicycle"
-                                        ? color1
+                                        ? colorPrimaryMid
                                         : Colors.grey[200],
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -211,7 +211,7 @@ class VehicleInfoPopup {
   /// HELPER: Formats the list range [min, max] into a readable string
   static String _formatRange(List<dynamic> range) {
     String formatValue(double cm) {
-      double inches = UnitConverter.cmToInches(cm);
+      double inches = UnitConverter.cmToFeet(cm);
 
       // 1. Format to 1 decimal place (e.g., 10.0 or 10.5)
       // 2. Remove .0 if it exists using RegExp
@@ -221,11 +221,11 @@ class VehicleInfoPopup {
     String low = formatValue(range[0].toDouble());
 
     if (range[1] == double.infinity) {
-      return "$low+ in";
+      return "$low+ ft";
     }
 
     String high = formatValue(range[1].toDouble());
-    return "$low - $high in";
+    return "$low - $high ft";
   }
 
   /// DYNAMIC DATA MAP: Connects to vehicleFloodThresholds from global.dart
