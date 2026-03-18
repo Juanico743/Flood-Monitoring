@@ -193,9 +193,8 @@ void showMapSettingsPopup(
   );
 }
 
-/// =======================
-/// SECTION TITLE
-/// =======================
+
+/// ----- SECTION TITLE -----
 Widget _sectionTitle(String text) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 10),
@@ -211,9 +210,7 @@ Widget _sectionTitle(String text) {
   );
 }
 
-/// =======================
-/// IMAGE OPTION CARD
-/// =======================
+/// ----- MAP IMAGE OPTION -----
 Widget mapImageOption({
   required String label,
   required String image,
@@ -241,7 +238,6 @@ Widget mapImageOption({
       ),
       child: Column(
         children: [
-          /// IMAGE PREVIEW
           Expanded(
             child: ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
@@ -253,7 +249,6 @@ Widget mapImageOption({
             ),
           ),
 
-          /// LABEL
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(

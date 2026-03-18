@@ -1,7 +1,7 @@
 import 'package:floodmonitoring/services/global.dart';
 import 'package:floodmonitoring/utils/converters.dart';
 import 'package:flutter/material.dart';
-import 'package:floodmonitoring/widgets/custom_app_bar.dart'; // <-- use our reusable AppBar
+import 'package:floodmonitoring/widgets/custom_app_bar.dart';
 
 class RecentAlert extends StatefulWidget {
   const RecentAlert({super.key});
@@ -14,9 +14,9 @@ class _RecentAlertState extends State<RecentAlert> {
   final Color themeBlue = Colors.blueAccent;
 
 
-  // ----------------------------------------
+  // ========================================
   // BUILD / CORE UI
-  // ----------------------------------------
+  // ========================================
 
   @override
   Widget build(BuildContext context) {
@@ -69,9 +69,9 @@ class _RecentAlertState extends State<RecentAlert> {
     );
   }
 
-  // ----------------------------------------
+  // ========================================
   // UI WIDGETS
-  // ----------------------------------------
+  // ========================================
 
   /// ----- ALERT CARD -----
   Widget _alertCard(Map<String, dynamic> alert) {

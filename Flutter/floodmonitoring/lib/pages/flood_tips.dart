@@ -11,11 +11,12 @@ class FloodTips extends StatefulWidget {
 }
 
 class _FloodTipsState extends State<FloodTips> {
-  String selectedVehicle = 'Motorcycle';
 
-  // ----------------------------------------
+  // ========================================
   // STATE / VARIABLES
-  // ----------------------------------------
+  // ========================================
+
+  String selectedVehicle = 'Motorcycle';
 
   /// ----- VEHICLE TIPS -----
   final Map<String, String> vehicleTips = {
@@ -66,9 +67,9 @@ While trucks have higher clearance, their large surface area makes them more sus
   /// ----- VEHICLE LIST -----
   final List<String> vehicleList = ['Bicycle', 'Motorcycle', 'Car', 'Truck'];
 
-  // ----------------------------------------
+  // ========================================
   // BUILD / CORE UI
-  // ----------------------------------------
+  // ========================================
 
   @override
   Widget build(BuildContext context) {
@@ -156,9 +157,9 @@ While trucks have higher clearance, their large surface area makes them more sus
     );
   }
 
-  // ----------------------------------------
+  // ========================================
   // UI WIDGETS
-  // ----------------------------------------
+  // ========================================
 
   /// ----- CARD WIDGET -----
   Widget _card(String title, String tip) {

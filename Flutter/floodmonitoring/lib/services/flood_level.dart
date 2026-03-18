@@ -2,16 +2,15 @@ import 'package:floodmonitoring/services/global.dart';
 import 'package:floodmonitoring/services/time.dart';
 import 'package:http/http.dart' as http;
 
-
-
+/// Service to handle data retrieval from the Blynk IoT platform and calculate flood levels.
 class BlynkService {
-  /// Fetches the distance value from Blynk Cloud for a given sensor token & pin
   Future<Map<String, dynamic>> fetchDistance(
       String token,
       String pin,
       double height,
       ) async {
     try {
+      // Construct the API URL for the specific Blynk device and virtual pin
       final url = Uri.parse(
         'https://blynk.cloud/external/api/get?token=$token&pin=$pin',
       );
@@ -23,14 +22,15 @@ class BlynkService {
         final measuredDistance = double.tryParse(body);
 
         if (measuredDistance != null) {
+          // Calculate the actual flood height by subtracting sensor distance from total sensor height
           double floodHeight = height - measuredDistance;
 
-          // Prevent negative values
+          // Prevent negative values if the water is below the expected ground level
           if (floodHeight < 0) floodHeight = 0;
 
+          // Determine the safety status and get the current timestamp
           final status = getStatusText(floodHeight);
           final lastUpdate = getCurrentTime();
-
 
           return {
             "distance": measuredDistance,
@@ -55,13 +55,15 @@ class BlynkService {
     }
   }
 
-  /// Determines the status based on flood height
+  /// Determines if the current flood height is Safe, Warning, or Danger based on the selected vehicle.
   String getStatusText(double floodHeightCm) {
+    // Retrieve the specific thresholds for the currently selected vehicle type
     final vehicleThreshold = vehicleFloodThresholds.firstWhere(
           (v) => v["vehicle"] == selectedVehicle,
       orElse: () => vehicleFloodThresholds[0],
     );
 
+    // Compare flood height against vehicle-specific safety ranges
     if (floodHeightCm <= vehicleThreshold["safeRange_cm"][1]) {
       return 'Safe';
     } else if (floodHeightCm <= vehicleThreshold["warningRange_cm"][1]) {

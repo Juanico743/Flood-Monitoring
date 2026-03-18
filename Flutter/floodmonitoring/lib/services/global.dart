@@ -73,7 +73,7 @@ Map<String, Map<String, dynamic>> sensors = {
     }
   },
 
-  "sensor_02": { //Near Church 1
+  "sensor_02": {
     "position": const LatLng(14.599904842697908, 121.00901626016662),
     "token": "rDsIi--IkEDcdOVLSBXh2DvfusmwPSFc",
     "pin": "V1",
@@ -93,7 +93,7 @@ Map<String, Map<String, dynamic>> sensors = {
     }
   },
 
-  "sensor_03": { //Near Church 2
+  "sensor_03": {
     "position": const LatLng(14.600046597692646, 121.00933305621841),
     "token": "rDsIi--IkEDcdOVLSBXh2DvfusmwPSFc",
     "pin": "V2",

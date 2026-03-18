@@ -1,10 +1,11 @@
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+/// Provides map tiles directly from local assets with a fallback system.
 class AssetTileProvider implements TileProvider {
   final String pathTemplate;
-  final int minZoom; // lowest zoom you exported
-  final int maxZoom; // highest zoom you exported
+  final int minZoom;
+  final int maxZoom;
 
   AssetTileProvider({
     required this.pathTemplate,
@@ -14,23 +15,23 @@ class AssetTileProvider implements TileProvider {
 
   @override
   Future<Tile> getTile(int x, int y, int? zoom) async {
+    // Ensure the zoom level stays within the defined asset range
     int z = zoom ?? minZoom;
-
-    // Clamp zoom within available range
     if (z < minZoom) z = minZoom;
     if (z > maxZoom) z = maxZoom;
 
-    // Try to load the requested tile
+    // Construct the file path by replacing placeholders with coordinates
     final path = pathTemplate
         .replaceAll('{z}', z.toString())
         .replaceAll('{x}', x.toString())
         .replaceAll('{y}', y.toString());
 
     try {
+      // Attempt to load the tile image from the app assets
       final ByteData data = await rootBundle.load(path);
       return Tile(256, 256, data.buffer.asUint8List());
     } catch (_) {
-      // Tile not found → fallback to nearest lower zoom
+      // If the specific tile is missing, look for a lower-zoom "parent" tile as a fallback
       int fallbackZoom = z - 1;
       while (fallbackZoom >= minZoom) {
         int dz = z - fallbackZoom;
@@ -52,7 +53,7 @@ class AssetTileProvider implements TileProvider {
         }
       }
 
-      // If all else fails → return empty tile
+      // Return an empty tile if no assets or fallbacks are found
       print('Tile missing at z=$z x=$x y=$y → returning empty tile');
       return Tile(256, 256, Uint8List(0));
     }

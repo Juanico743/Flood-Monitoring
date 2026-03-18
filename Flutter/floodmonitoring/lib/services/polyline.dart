@@ -4,12 +4,11 @@ import 'package:http/http.dart' as http;
 import 'package:flexible_polyline_dart/flutter_flexible_polyline.dart';
 import 'package:flexible_polyline_dart/latlngz.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'global.dart'; // googleMapAPI + hereAPIKey
+import 'global.dart';
 
+/// Service to fetch and decode route polylines from Google Maps or HERE Maps.
 class PolylineService {
-  /// MAIN FUNCTION
-  /// normalRouting = true → Google
-  /// normalRouting = false → HERE (supports avoid zones)
+  /// Routes to the appropriate provider based on whether 'avoid zones' are needed.
   static Future<List<LatLng>> getRoute(
       LatLng origin,
       LatLng destination, {
@@ -23,9 +22,11 @@ class PolylineService {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // GOOGLE ROUTING (normal)
-  // ---------------------------------------------------------------------------
+  // ========================================
+  // GOOGLE ROUTING (Standard navigation)
+  // ========================================
+
+  /// Fetches a standard route using the Google Directions API.
   static Future<List<LatLng>> _fetchGoogleRoute(
       LatLng origin, LatLng destination) async {
     final url = Uri.parse(
@@ -74,6 +75,7 @@ class PolylineService {
     return _decodeGooglePolyline(encoded);
   }
 
+  /// Decodes the encoded polyline string from Google into a list of LatLng coordinates.
   static List<LatLng> _decodeGooglePolyline(String encoded) {
     List<LatLng> polyline = [];
     int index = 0, lat = 0, lng = 0;
@@ -108,14 +110,17 @@ class PolylineService {
     return polyline;
   }
 
-  // ---------------------------------------------------------------------------
-  // HERE ROUTING (with avoid zones)
-  // ---------------------------------------------------------------------------
+  // ========================================
+  // HERE ROUTING (Custom routing with avoid zones)
+  // ========================================
+
+  /// Fetches a route from HERE Maps, allowing the exclusion of specific geographic areas.
   static Future<List<LatLng>> _fetchHereRoute(
       LatLng origin,
       LatLng destination,
       List<Map<String, dynamic>> avoidZones,
       ) async {
+    // Format the avoid parameters if zones (like flood areas) are provided
     final avoidParam =
     avoidZones.isNotEmpty ? "&avoid[areas]=${_buildAvoidAreas(avoidZones)}" : "";
 
@@ -139,11 +144,12 @@ class PolylineService {
     final poly = data["routes"]?[0]?["sections"]?[0]?["polyline"];
     if (poly == null) return [];
 
-    /// Decode HERE flexible polyline
+    // Decode the flexible polyline format used by HERE Maps
     final List<LatLngZ> decoded = FlexiblePolyline.decode(poly);
     return decoded.map((p) => LatLng(p.lat, p.lng)).toList();
   }
 
+  /// Converts a list of circular zones into a bounding box string format for the API.
   static String _buildAvoidAreas(List<Map<String, dynamic>> zones) {
     return zones.map((zone) {
       final bbox = _getBBox(zone["position"], zone["radius"]);
@@ -151,8 +157,9 @@ class PolylineService {
     }).join("|");
   }
 
+  /// Calculates the bounding box coordinates given a center point and a radius in meters.
   static Map<String, double> _getBBox(LatLng center, double radius) {
-    double deltaLat = radius / 111000;
+    double deltaLat = radius / 111000; // Approx meters per degree latitude
     double deltaLon =
         radius / (111000 * cos(center.latitude * pi / 180));
 

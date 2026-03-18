@@ -14,11 +14,17 @@ class PlaceSearchPopup extends StatefulWidget {
 }
 
 class _PlaceSearchPopupState extends State<PlaceSearchPopup> {
+
+  // ========================================
+  // STATE / VARIABLES
+  // ========================================
+
   final TextEditingController _controller = TextEditingController();
   List<dynamic> _results = [];
   bool _loading = false;
   List<Map<String, dynamic>> _recentPlaces = [];
 
+  /// ----- FAMOUS PLACES -----
   final List<Map<String, dynamic>> _famousPlaces = [
     {'name': 'Rizal Park, Manila', 'latLng': LatLng(14.5826, 120.9794)},
     {'name': 'SM Mall of Asia, Pasay', 'latLng': LatLng(14.5345, 120.9816)},
@@ -26,14 +32,21 @@ class _PlaceSearchPopupState extends State<PlaceSearchPopup> {
     {'name': 'Fort Santiago, Manila', 'latLng': LatLng(14.5939, 120.9740)},
   ];
 
+  // ========================================
+  // INITIALIZATION (initState)
+  // ========================================
+
   @override
   void initState() {
     super.initState();
     _loadRecentPlaces();
   }
 
-  // --- PERSISTENCE LOGIC ---
+  // ========================================
+  // STATE / VARIABLES
+  // ========================================
 
+  /// ----- LOAD RECENT -----
   Future<void> _loadRecentPlaces() async {
     final prefs = await SharedPreferences.getInstance();
     String? encoded = prefs.getString('recent_search_history');
@@ -48,16 +61,14 @@ class _PlaceSearchPopupState extends State<PlaceSearchPopup> {
     }
   }
 
+  /// ----- SAVE TO RECENT -----
   Future<void> _saveToRecent(String name, LatLng latLng) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Remove if already exists (to move it to top)
     _recentPlaces.removeWhere((element) => element['name'] == name);
 
-    // Insert at start
     _recentPlaces.insert(0, {'name': name, 'latLng': latLng});
 
-    // Limit to 4
     if (_recentPlaces.length > 4) _recentPlaces.removeLast();
 
     List<Map<String, dynamic>> toSave = _recentPlaces.map((e) => {
@@ -69,8 +80,7 @@ class _PlaceSearchPopupState extends State<PlaceSearchPopup> {
     await prefs.setString('recent_search_history', jsonEncode(toSave));
   }
 
-  // --- SEARCH LOGIC ---
-
+  /// ----- SEARCH PLACES -----
   Future<void> _searchPlace(String input) async {
     if (input.isEmpty) {
       setState(() => _results.clear());
@@ -86,6 +96,7 @@ class _PlaceSearchPopupState extends State<PlaceSearchPopup> {
     });
   }
 
+  /// ----- SELECT PLACE -----
   Future<void> _selectPlace(String placeId, String name) async {
     final url = 'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=geometry&key=$googleMapAPIKey';
     final res = await http.get(Uri.parse(url));
@@ -93,13 +104,13 @@ class _PlaceSearchPopupState extends State<PlaceSearchPopup> {
     final loc = data['result']['geometry']['location'];
     final LatLng selectedLatLng = LatLng(loc['lat'], loc['lng']);
 
-    // Only save to recent if it's from a search result
     await _saveToRecent(name, selectedLatLng);
 
     if (!mounted) return;
     Navigator.pop(context, {'name': name, 'latLng': selectedLatLng});
   }
 
+  /// ----- CUSTOM APP BAR -----
   PreferredSizeWidget _modernAppBar() {
     return AppBar(
       backgroundColor: Colors.white,
@@ -140,6 +151,10 @@ class _PlaceSearchPopupState extends State<PlaceSearchPopup> {
     );
   }
 
+  // ========================================
+  // BUILD / CORE UI
+  // ========================================
+
   @override
   Widget build(BuildContext context) {
     bool showCurrentLocation = _controller.text.isEmpty && searchStartLocation;
@@ -179,7 +194,6 @@ class _PlaceSearchPopupState extends State<PlaceSearchPopup> {
               separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade200),
               itemBuilder: (context, index) {
                 if (_controller.text.isEmpty) {
-                  // 1. Current Location Section
                   if (showCurrentLocation && index == 0) {
                     return ListTile(
                       leading: const Icon(Icons.my_location, color: colorPrimaryMid),
@@ -189,7 +203,6 @@ class _PlaceSearchPopupState extends State<PlaceSearchPopup> {
                     );
                   }
 
-                  // 2. Recent Places Section
                   int recentStartIndex = currentLocCount;
                   if (index >= recentStartIndex && index < recentStartIndex + recentCount) {
                     final place = _recentPlaces[index - recentStartIndex];
@@ -201,7 +214,6 @@ class _PlaceSearchPopupState extends State<PlaceSearchPopup> {
                     );
                   }
 
-                  // 3. Famous Places Section
                   int famousStartIndex = currentLocCount + recentCount;
                   final place = _famousPlaces[index - famousStartIndex];
                   return ListTile(

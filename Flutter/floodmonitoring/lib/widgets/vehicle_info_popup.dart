@@ -4,14 +4,13 @@ import 'package:floodmonitoring/utils/style.dart';
 import 'package:flutter/material.dart';
 
 class VehicleInfoPopup {
-  /// Show vehicle info popup
+
   static void show(
       BuildContext context,
       String vehicleName, {
         Function(String selectedVehicle)? onConfirm,
         Function(String selectedVehicle)? onCancel,
       }) {
-    // Pull the data dynamically from our getter
     final data = _getVehicleData[vehicleName];
     if (data == null) return;
 

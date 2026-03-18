@@ -4,10 +4,11 @@ import 'package:delightful_toast/delight_toast.dart';
 import 'package:delightful_toast/toast/components/toast_card.dart';
 import 'package:flutter/material.dart';
 
-bool _isToastShowing = false; // global toast lock
+bool _isToastShowing = false;
 
+/// ----- SHOW NEAR FLOOD ALERT TOAST -----
 void showNearFloodAlertToast(BuildContext context) {
-  if (_isToastShowing) return; // 🚫 block duplicates
+  if (_isToastShowing) return;
 
   _isToastShowing = true;
 
@@ -47,17 +48,15 @@ void showNearFloodAlertToast(BuildContext context) {
       color: const Color(0xFFD32F2F),
     ),
     autoDismiss: true,
-    snackbarDuration: const Duration(seconds: 3), // ✅ 3 seconds
+    snackbarDuration: const Duration(seconds: 3),
   ).show(context);
 
-  // Reset toast lock after 3 seconds
   Timer(const Duration(seconds: 3), () {
     _isToastShowing = false;
   });
 }
 
-
-
+/// ----- SHOW SELECT VEHICLE TOAST -----
 void showSelectVehicleToast(BuildContext context) {
   if (_isToastShowing) return; // 🚫 block duplicates
 
@@ -99,10 +98,9 @@ void showSelectVehicleToast(BuildContext context) {
       color: const Color(0xFF1E88E5),
     ),
     autoDismiss: true,
-    snackbarDuration: const Duration(seconds: 3), // show 5 seconds
+    snackbarDuration: const Duration(seconds: 3),
   ).show(context);
 
-  // Reset toast lock after the duration
   Timer(const Duration(seconds: 3), () {
     _isToastShowing = false;
   });

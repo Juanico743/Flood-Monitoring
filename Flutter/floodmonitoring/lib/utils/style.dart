@@ -40,9 +40,8 @@ const Color colorPolylineMain = Color(0xFF2196F3);
 const Color colorPolylineBack = Color(0xFF81D4FA);
 
 
-/// =======================
-/// PRIMARY BUTTON
-/// =======================
+
+/// ----- PRIMARY BUTTON -----
 Widget primaryButton({
   required String text,
   required VoidCallback onTap,
@@ -69,9 +68,7 @@ Widget primaryButton({
   );
 }
 
-/// =======================
-/// SECONDARY BUTTON
-/// =======================
+/// ----- SECONDARY BUTTON -----
 Widget secondaryButton({
   required String text,
   required VoidCallback onTap,

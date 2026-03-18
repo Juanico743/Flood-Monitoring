@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
-/// Full-screen Lottie popup with fixed settings
-/// Auto-closes after 5 seconds, black semi-transparent background, Lottie size 300x300
 void showFullScreenLottiePopup(BuildContext context) {
   showDialog(
     context: context,
@@ -16,14 +14,14 @@ void showFullScreenLottiePopup(BuildContext context) {
       });
 
       return Dialog(
-        backgroundColor: Colors.transparent, // transparent dialog
-        insetPadding: EdgeInsets.zero,       // full screen
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
         child: SizedBox.expand(
           child: Container(
-            color: Colors.black.withOpacity(0.8), // semi-transparent black
+            color: Colors.black.withOpacity(0.8),
             child: Center(
               child: Lottie.asset(
-                'assets/lottie/loading.json', // fixed Lottie file
+                'assets/lottie/loading.json',
                 width: 300,
                 height: 300,
                 fit: BoxFit.contain,

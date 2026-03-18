@@ -17,9 +17,9 @@ class RescueCall extends StatefulWidget {
 class _RescueCallState extends State<RescueCall> {
 
 
-  // ----------------------------------------
+  // ========================================
   // INITIALIZATION (initState)
-  // ----------------------------------------
+  // ========================================
 
   @override
   void initState() {
@@ -27,9 +27,9 @@ class _RescueCallState extends State<RescueCall> {
     loadEmergencyContacts();
   }
 
-  // ----------------------------------------
+  // ========================================
   // STATE / VARIABLES
-  // ----------------------------------------
+  // ========================================
 
   /// ----- EMERGENCY CONTACTS -----
   List<Map<String, String>> emergencyContacts = [
@@ -71,9 +71,9 @@ class _RescueCallState extends State<RescueCall> {
   ];
 
 
-  // ----------------------------------------
+  // ========================================
   // LOGIC / HELPER FUNCTIONS
-  // ----------------------------------------
+  // ========================================
 
   /// ----- LOAD EMERGENCY CONTACTS -----
   Future<void> loadEmergencyContacts() async {
@@ -118,9 +118,9 @@ class _RescueCallState extends State<RescueCall> {
   }
 
 
-  // ----------------------------------------
+  // ========================================
   // BUILD / CORE UI
-  // ----------------------------------------
+  // ========================================
 
   @override
   Widget build(BuildContext context) {
@@ -146,9 +146,9 @@ class _RescueCallState extends State<RescueCall> {
     );
   }
 
-  // ----------------------------------------
+  // ========================================
   // UI WIDGETS
-  // ----------------------------------------
+  // ========================================
 
 
   /// ----- HEADER -----
