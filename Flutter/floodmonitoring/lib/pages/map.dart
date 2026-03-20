@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:floodmonitoring/services/flood_level.dart';
 import 'package:floodmonitoring/services/global.dart';
+import 'package:floodmonitoring/services/location.dart';
 import 'package:floodmonitoring/services/polyline.dart';
 import 'package:floodmonitoring/services/sensor_service.dart';
 import 'package:floodmonitoring/services/threshold_service.dart';
@@ -151,6 +152,8 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
 
+    _permissionLocation();
+
     selectedVehicle = "";
     _updateTime();
 
@@ -251,6 +254,12 @@ class _MapScreenState extends State<MapScreen> {
 
   Position? _lastUpdatedPosition;
   StreamSubscription<Position>? _positionStream;
+
+
+  /// ----- PERMISSION LOCATION -----
+  Future<void> _permissionLocation() async {
+    await LocationService.getCurrentLocation(context);
+  }
 
   /// ----- LOAD CURRENT LOCATION -----
   Future<void> _loadCurrentLocation() async {

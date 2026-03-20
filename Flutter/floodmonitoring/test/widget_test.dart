@@ -1,30 +1,15 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:floodmonitoring/pages/dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+// 1. Change this to your MapScreen path
+import 'package:floodmonitoring/pages/map.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(MaterialApp(home: Dashboard()));
+  testWidgets('App loads map screen', (WidgetTester tester) async {
+    // 2. Build our app using MapScreen instead of Dashboard
+    await tester.pumpWidget(MaterialApp(home: MapScreen()));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // 3. You can verify if the Map is present (adjust based on your actual UI text)
+    // For example, if your map has a "Search" or "Alerts" text:
+    // expect(find.text('Alerts'), findsOneWidget);
   });
 }

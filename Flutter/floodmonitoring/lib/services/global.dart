@@ -6,7 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 
 
-const String serverUri = "http://192.168.1.7:8000";
+const String serverUri = "http://192.168.1.4:8000";
 
 /// API KEYS
 const String googleMapAPIKey = "AIzaSyAMamxCz-N-wiGSq4-DfVpD9zOpP_GZ_9o";

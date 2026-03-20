@@ -1,33 +1,44 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // For SystemNavigator.pop()
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart'; // For Phoenix.rebirth()
 
-/// A service to handle device location retrieval and permission management.
 class LocationService {
-  static Future<Position?> getCurrentLocation() async {
-    // Check if the device has location services (GPS) turned on
+  // Added BuildContext context as a parameter
+  static Future<Position?> getCurrentLocation(BuildContext context) async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       print('Location services are disabled.');
       return null;
     }
 
-    // Check for app-level location permissions
     LocationPermission permission = await Geolocator.checkPermission();
+
+    // If permission is Denied Forever, we quit the app
+    if (permission == LocationPermission.deniedForever) {
+      print('Permanently denied. Quitting app...');
+      await SystemNavigator.pop(); // This closes the app
+      return null;
+    }
+
     if (permission == LocationPermission.denied) {
-      // Request permission if it hasn't been granted yet
       permission = await Geolocator.requestPermission();
+
       if (permission == LocationPermission.denied) {
-        print('Location permissions are denied.');
+        print('User denied permission. Quitting app...');
+        await SystemNavigator.pop(); // Close app if they hit deny
+        return null;
+      }
+
+      // If they just accepted (WhileInUse or Always), we RESTART
+      if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+        print('Permission accepted! Restarting app...');
+        Phoenix.rebirth(context); // This restarts the app
         return null;
       }
     }
 
-    // Handle cases where the user has permanently disabled permissions in settings
-    if (permission == LocationPermission.deniedForever) {
-      print('Location permissions are permanently denied.');
-      return null;
-    }
-
-    // Retrieve the current GPS coordinates with high precision
+    // If we already have permission, just get the position
     return await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
     );
