@@ -453,7 +453,6 @@ class _MapScreenState extends State<MapScreen> {
 
   /// ----- FETCH DATA FOR ALL SENSORS -----
   Future<void> fetchDataForAllSensors() async {
-    print("fetchDataForAllSensors");
 
     List<Future<void>> futures = [];
 
