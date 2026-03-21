@@ -500,6 +500,7 @@ class _MapScreenState extends State<MapScreen> {
             infoWindow: showSensorLabels ? InfoWindow(title: id) : InfoWindow.noText,
             anchor: const Offset(0.5, 0.5),
               onTap: () => _onSensorTap(id, sensor),
+            zIndex: 2,
           ),
         );
       });
@@ -822,6 +823,7 @@ class _MapScreenState extends State<MapScreen> {
           position: position,
           icon: pinIcon,
           anchor: const Offset(0.5, 1.0),
+          zIndex: 2,
         );
         _markers.add(tappedMarker!);
 
@@ -1086,6 +1088,7 @@ class _MapScreenState extends State<MapScreen> {
             position: position,
             icon: pinIcon,
             anchor: const Offset(0.5, 1.0),
+            zIndex: 2,
           );
           _markers.add(tappedMarker!);
           tappedPosition = position;
@@ -1159,6 +1162,7 @@ class _MapScreenState extends State<MapScreen> {
               position: position,
               icon: pinIcon,
               anchor: const Offset(0.5, 1.0),
+              zIndex: 2,
             );
             _markers.add(startMarker!);
 
