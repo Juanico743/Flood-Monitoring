@@ -245,6 +245,7 @@ class _MapScreenState extends State<MapScreen> {
             position: sensor['position'],
             icon: sensorIcon,
             onTap: () => _onSensorTap(id, sensor),
+            zIndex: 2,
           ),
         );
       });
@@ -626,6 +627,7 @@ class _MapScreenState extends State<MapScreen> {
           anchor: const Offset(0.5, 0.5),
           rotation: _userHeading,
           flat: true,
+          zIndex: 2,
         ),
       );
     });
@@ -664,6 +666,7 @@ class _MapScreenState extends State<MapScreen> {
                 ? InfoWindow(title: id)
                 : InfoWindow.noText,
             onTap: () => _onSensorTap(id, sensor),
+            zIndex: 2,
           ),
         );
       });
@@ -1034,6 +1037,7 @@ class _MapScreenState extends State<MapScreen> {
           startCap: Cap.roundCap,
           endCap: Cap.roundCap,
           jointType: JointType.round,
+          zIndex: 2,
         ),
 
         Polyline(
@@ -1044,6 +1048,7 @@ class _MapScreenState extends State<MapScreen> {
           startCap: Cap.roundCap,
           endCap: Cap.roundCap,
           jointType: JointType.round,
+          zIndex: 2,
         ),
       ]);
     });
@@ -1248,7 +1253,9 @@ class _MapScreenState extends State<MapScreen> {
           urlTemplate: '$serverUri/media/tiles/{z}/{x}/{y}.png',
         ),
         transparency: 0.3,
+        zIndex: 1,
       ),
+
     };
   }
 
