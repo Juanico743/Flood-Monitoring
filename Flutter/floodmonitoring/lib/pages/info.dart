@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:floodmonitoring/services/weather.dart';
 import 'package:floodmonitoring/utils/converters.dart';
 import 'package:flutter/material.dart';
 import 'package:floodmonitoring/services/flood_level.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:http/http.dart' as http;
 import '../services/global.dart';
 
 class Info extends StatefulWidget {
@@ -13,8 +16,16 @@ class Info extends StatefulWidget {
 }
 
 class _InfoState extends State<Info> {
+
+  // ========================================
+  // STATE / VARIABLES
+  // ========================================
+
   final blynk = BlynkService();
   Timer? _timer;
+
+  List<FlSpot> hourlyData = [];
+  List<String> labels = ["", "", ""];
 
   // ========================================
   // INITIALIZATION (initState)
@@ -25,6 +36,7 @@ class _InfoState extends State<Info> {
     super.initState();
     fetchDataForSensor(sensorViewInfo);
     getWeather(sensorViewInfo);
+    loadSensorHistoryView(sensorViewInfo);
 
     _timer = Timer.periodic(
         const Duration(seconds: 1), (_) => fetchDataForSensor(sensorViewInfo));
@@ -76,6 +88,37 @@ class _InfoState extends State<Info> {
     }
   }
 
+  /// ----- LOAD SENSOR HISTORY VIEW -----
+  Future<void> loadSensorHistoryView(String sensorId) async {
+    try {
+      String uri = '$serverUri/api/get-sensor-history/';
+
+      var res = await http.post(
+        Uri.parse(uri),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"sensor_id": sensorId}),
+      );
+
+      var response = jsonDecode(res.body);
+
+      if (res.statusCode == 200 && response['success'] == true) {
+        // Map the dynamic list from JSON to FlSpot objects
+        List<FlSpot> fetchedSpots = (response['hourlyData'] as List)
+            .map((item) => FlSpot(item['x'].toDouble(), item['y'].toDouble()))
+            .toList();
+
+        setState(() {
+          hourlyData = fetchedSpots;
+          labels = List<String>.from(response['labels']);
+        });
+
+        print("History Loaded Successfully");
+      }
+    } catch (e) {
+      print("Error fetching sensor history: $e");
+    }
+  }
+
 
 
   // ========================================
@@ -102,6 +145,8 @@ class _InfoState extends State<Info> {
             _sensorDetails(),
             const SizedBox(height: 12),
             _weatherSection(),
+            const SizedBox(height: 12),
+            _historyGraph(),
             const SizedBox(height: 12),
           ],
         ),
@@ -300,6 +345,91 @@ class _InfoState extends State<Info> {
                 fontSize: 15, fontWeight: FontWeight.bold, color: color ?? Colors.black87),
           ),
         ],
+      ),
+    );
+  }
+
+  /// ----- HISTORY GRAPH -----
+  Widget _historyGraph() {
+    return _card(
+      title: "3-Day Flood Levels (Hourly)",
+      child: SizedBox(
+        height: 200,
+        child: LineChart(
+          LineChartData(
+            minX: 0,
+            maxX: 71,
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: true,
+              checkToShowVerticalLine: (value) => value % 24 == 0,
+              getDrawingVerticalLine: (value) => FlLine(
+                color: Colors.grey[300]!,
+                strokeWidth: 1,
+                dashArray: [5, 5],
+              ),
+            ),
+            titlesData: FlTitlesData(
+              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 35,
+                  getTitlesWidget: (value, meta) => Text(
+                    "${value.toStringAsFixed(1)}ft",
+                    style: TextStyle(color: Colors.grey[600], fontSize: 10),
+                  ),
+                ),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  interval: 1,
+                  getTitlesWidget: (value, meta) {
+                    if (labels.isEmpty) return const SizedBox.shrink();
+
+                    if (value == 12) return _dateLabel(labels[0]);
+                    if (value == 36) return _dateLabel(labels[1]);
+                    if (value == 60) return _dateLabel(labels[2]);
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
+            ),
+            borderData: FlBorderData(show: false),
+            lineBarsData: [
+              LineChartBarData(
+                spots: hourlyData,
+                isCurved: true,
+                curveSmoothness: 0.2,
+                color: Colors.blueAccent,
+                barWidth: 3,
+                isStrokeCapRound: true,
+                dotData: const FlDotData(show: false),
+                belowBarData: BarAreaData(
+                  show: true,
+                  color: Colors.blueAccent.withOpacity(0.1),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// ----- DATE LABEL WIDGET -----
+  Widget _dateLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: Colors.blueAccent[700],
+          fontWeight: FontWeight.bold,
+          fontSize: 11,
+        ),
       ),
     );
   }
