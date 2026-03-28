@@ -75,7 +75,7 @@ class VehicleInfoPopup {
 
                       const SizedBox(height: 20),
 
-                      // VEHICLE TYPE SELECTION
+                      // VEHICLE TYPE SELECTION FOR BICYCLE
                       if (vehicleName == "Bicycle") ...[
                         const Text(
                           "Select Type",
@@ -84,64 +84,61 @@ class VehicleInfoPopup {
                         const SizedBox(height: 10),
                         Row(
                           children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    selectedVehicle = "Motorcycle";
-                                  });
-                                },
-                                child: Container(
-                                  height: 42,
-                                  decoration: BoxDecoration(
-                                    color: selectedVehicle == "Motorcycle"
-                                        ? colorPrimaryMid
-                                        : Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      "2 Wheels",
-                                      style: TextStyle(
-                                        color: selectedVehicle == "Motorcycle"
-                                            ? Colors.white
-                                            : Colors.black87,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                            _buildSelectionCard(
+                              label: "2 Wheels",
+                              isSelected: selectedVehicleType == "2Wheels",
+                              onTap: () {
+                                setState(() {
+                                  selectedVehicle = "Bicycle";
+                                  selectedVehicleType = "2Wheels";
+                                });
+                              },
                             ),
                             const SizedBox(width: 12),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    selectedVehicle = "Bicycle";
-                                  });
-                                },
-                                child: Container(
-                                  height: 42,
-                                  decoration: BoxDecoration(
-                                    color: selectedVehicle == "Bicycle"
-                                        ? colorPrimaryMid
-                                        : Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      "3 Wheels",
-                                      style: TextStyle(
-                                        color: selectedVehicle == "Bicycle"
-                                            ? Colors.white
-                                            : Colors.black87,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                            _buildSelectionCard(
+                              label: "3 Wheels",
+                              isSelected: selectedVehicleType == "3Wheels",
+                              onTap: () {
+                                setState(() {
+                                  selectedVehicle = "Bicycle";
+                                  selectedVehicleType = "3Wheels";
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+
+                      // VEHICLE TYPE SELECTION FOR BICYCLE
+                      if (vehicleName == "Motorcycle") ...[
+                        const Text(
+                          "Select Type",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            _buildSelectionCard(
+                              label: "Motorcycle",
+                              isSelected: selectedVehicleType == "Motorcycle",
+                              onTap: () {
+                                setState(() {
+                                  selectedVehicle = "Motorcycle";
+                                  selectedVehicleType = "Motorcycle";
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 12),
+                            _buildSelectionCard(
+                              label: "Tricycle",
+                              isSelected: selectedVehicleType == "Tricycle",
+                              onTap: () {
+                                setState(() {
+                                  selectedVehicle = "Motorcycle";
+                                  selectedVehicleType = "Tricycle";
+                                });
+                              },
                             ),
                           ],
                         ),
@@ -184,6 +181,72 @@ class VehicleInfoPopup {
           ),
         );
       },
+    );
+  }
+
+  static Widget _buildSelectionCard({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          height: 46,
+          decoration: BoxDecoration(
+            color: colorBackground,
+            // Using a slightly larger radius for the main card for a modern look
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? colorPrimaryMid : Colors.transparent,
+              width: 1.5,
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // THE OUTER CONTAINER (The Radio Border)
+              Container(
+                height: 20,
+                width: 20,
+                decoration: BoxDecoration(
+                  // Using 100 instead of BoxShape.circle for smoother rendering
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(
+                    color: isSelected ? colorPrimaryMid : Colors.grey[400]!,
+                    width: 1.8,
+                  ),
+                  color: Colors.white,
+                ),
+                child: Center(
+                  // THE INNER DOT
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    height: isSelected ? 10 : 0,
+                    width: isSelected ? 10 : 0,
+                    decoration: BoxDecoration(
+                      color: colorPrimaryMid,
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.black : Colors.black54,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

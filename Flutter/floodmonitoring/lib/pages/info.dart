@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:floodmonitoring/services/weather.dart';
 import 'package:floodmonitoring/utils/converters.dart';
+import 'package:floodmonitoring/utils/style.dart';
 import 'package:flutter/material.dart';
 import 'package:floodmonitoring/services/flood_level.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -359,6 +360,43 @@ class _InfoState extends State<Info> {
           LineChartData(
             minX: 0,
             maxX: 71,
+            lineTouchData: LineTouchData(
+              getTouchedSpotIndicator: (LineChartBarData barData, List<int> spotIndexes) {
+                return spotIndexes.map((index) {
+                  return TouchedSpotIndicatorData(
+                    FlLine(
+                      color: Colors.blueAccent.withOpacity(0.5),
+                      strokeWidth: 2,
+                    ),
+                    FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) =>
+                          FlDotCirclePainter(
+                            radius: 4,
+                            color: Colors.white,
+                            strokeColor: Colors.blueAccent,
+                            strokeWidth: 2,
+                          ),
+                    ),
+                  );
+                }).toList();
+              },
+              touchTooltipData: LineTouchTooltipData(
+                getTooltipColor: (touchedSpot) => Colors.blueAccent,
+                getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                  return touchedSpots.map((LineBarSpot touchedSpot) {
+                    return LineTooltipItem(
+                      "${touchedSpot.y.toStringAsFixed(1)} ft",
+                      const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    );
+                  }).toList();
+                },
+              ),
+            ),
+
             gridData: FlGridData(
               show: true,
               drawVerticalLine: true,
@@ -388,7 +426,6 @@ class _InfoState extends State<Info> {
                   interval: 1,
                   getTitlesWidget: (value, meta) {
                     if (labels.isEmpty) return const SizedBox.shrink();
-
                     if (value == 12) return _dateLabel(labels[0]);
                     if (value == 36) return _dateLabel(labels[1]);
                     if (value == 60) return _dateLabel(labels[2]);
@@ -402,14 +439,28 @@ class _InfoState extends State<Info> {
               LineChartBarData(
                 spots: hourlyData,
                 isCurved: true,
-                curveSmoothness: 0.2,
-                color: Colors.blueAccent,
-                barWidth: 3,
+                curveSmoothness: 0.35,
+                barWidth: 2,
                 isStrokeCapRound: true,
                 dotData: const FlDotData(show: false),
+                gradient: const LinearGradient(
+                  colors: [
+                    gradientStart,
+                    gradientEnd,
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
                 belowBarData: BarAreaData(
                   show: true,
-                  color: Colors.blueAccent.withOpacity(0.1),
+                  gradient: LinearGradient(
+                    colors: [
+                      gradientStart.withOpacity(0.3),
+                      gradientEnd.withOpacity(0.1),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
                 ),
               ),
             ],

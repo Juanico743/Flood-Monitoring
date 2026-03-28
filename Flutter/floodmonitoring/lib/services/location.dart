@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // For SystemNavigator.pop()
+import 'package:flutter/services.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter_phoenix/flutter_phoenix.dart'; // For Phoenix.rebirth()
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 
 class LocationService {
   // Added BuildContext context as a parameter
@@ -42,5 +43,28 @@ class LocationService {
     return await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
     );
+  }
+
+  static Future<String> getAddressFromPosition(Position position) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude
+      );
+
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+
+
+        if (place.street!.toLowerCase().contains(place.name!.toLowerCase())) {
+          return "${place.street}, ${place.locality}";
+        } else {
+          return "${place.name}, ${place.street}, ${place.locality}";
+        }
+      }
+      return "Address not found";
+    } catch (e) {
+      return "Error: ${e.toString()}";
+    }
   }
 }

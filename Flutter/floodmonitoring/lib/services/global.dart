@@ -11,7 +11,7 @@ const String serverUri = "https://yeasty-rikki-nonchivalrously.ngrok-free.dev";
 /// API KEYS
 const String googleMapAPIKey = "AIzaSyAMamxCz-N-wiGSq4-DfVpD9zOpP_GZ_9o";
 const String hereAPIKey = "TiHkVyYjkDXokfAstiAx97Iqttb-eqUTd1vCq1aiqhE";
-const String mapboxAPIKey = "pk.eyJ1IjoidmluY2VudGplcnJ5anVhbmljbyIsImEiOiJjbWlyanl6MDMwMmRuM2NzZnAzZWRtMGRzIn0.8zbipe-6rXc1C5u0fP15aQ";
+//const String mapboxAPIKey = "pk.eyJ1IjoidmluY2VudGplcnJ5anVhbmljbyIsImEiOiJjbWlyanl6MDMwMmRuM2NzZnAzZWRtMGRzIn0.8zbipe-6rXc1C5u0fP15aQ";
 const String weatherAPIKey = 'dfa37345e5d4c1fa93dcb18d17f07643';
 
 /// Testing mode
@@ -21,6 +21,7 @@ bool settingPin = true;
 /// Global Variable
 Position? currentPosition;
 String selectedVehicle = "";
+String selectedVehicleType = "";
 int sensorHeight = 200; //Centimeter
 String sensorViewInfo = "";
 

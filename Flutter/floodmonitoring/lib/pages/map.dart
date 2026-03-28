@@ -144,6 +144,8 @@ class _MapScreenState extends State<MapScreen> {
     "location": LatLng(0.0, 0.0),
   };
 
+  String? addressName;
+
   // ========================================
   // INITIALIZATION (initState)
   // ========================================
@@ -1283,6 +1285,21 @@ class _MapScreenState extends State<MapScreen> {
   }
 
 
+  void _convertPositionToName(Position newPos) async {
+    setState(() {
+      addressName = "Loading address...";
+    });
+
+
+    String result = await LocationService.getAddressFromPosition(newPos);
+
+    setState(() {
+      addressName = result;
+    });
+
+  }
+
+
   // ========================================
   // BUILD / CORE UI
   // ========================================
@@ -1629,7 +1646,7 @@ class _MapScreenState extends State<MapScreen> {
                                             savedPlace["name"] != ""
                                                 ? savedPlace["name"]
                                                 : (savedPinPosition != null
-                                                ? "${savedPinPosition!.latitude.toStringAsFixed(5)}, ${savedPinPosition!.longitude.toStringAsFixed(5)}"
+                                                ? addressName
                                                 : "Select Destination"),
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
@@ -2150,12 +2167,29 @@ class _MapScreenState extends State<MapScreen> {
                                         savedPinPosition = tappedPosition;
                                         savedPlace = Map.from(currentPlace);
 
+                                        _convertPositionToName(
+                                          Position(
+                                            latitude: tappedPosition!.latitude,
+                                            longitude: tappedPosition!.longitude,
+                                            timestamp: DateTime.now(),
+                                            accuracy: 0,
+                                            altitude: 0,
+                                            heading: 0,
+                                            speed: 0,
+                                            speedAccuracy: 0,
+                                            altitudeAccuracy: 0,
+                                            headingAccuracy: 0,
+                                          ),
+                                        );
+
                                         tappedMarker = null;
                                         tappedPosition = null;
                                         currentPlace = {
                                           "name": "",
                                           "location": LatLng(0.0, 0.0),
                                         };
+
+
                                       }
                                       else if (searchStartLocation) {
                                         if (savedStartMarker != null) {
@@ -2662,6 +2696,7 @@ class _MapScreenState extends State<MapScreen> {
                                             setState(() {
                                               tempSelectedVehicle = selectedVehicle;
                                               selectedVehicle = 'Bicycle';
+                                              selectedVehicleType = "2Wheels";
                                             });
                                             VehicleInfoPopup.show(
                                               context,
@@ -2691,6 +2726,7 @@ class _MapScreenState extends State<MapScreen> {
                                             setState(() {
                                               tempSelectedVehicle = selectedVehicle;
                                               selectedVehicle = 'Motorcycle';
+                                              selectedVehicleType = "Motorcycle";
                                             });
                                             VehicleInfoPopup.show(
                                               context,
