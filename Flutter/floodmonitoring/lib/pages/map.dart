@@ -2377,6 +2377,10 @@ class _MapScreenState extends State<MapScreen> {
                                     });
 
                                     if (!hasValidPin) {
+                                      setState(() {
+                                        searchStartLocation = false;
+                                        searchEndLocation = true;
+                                      });
                                       openPlaceSearch();
                                     } else {
                                       WidgetsBinding.instance.addPostFrameCallback((_) {

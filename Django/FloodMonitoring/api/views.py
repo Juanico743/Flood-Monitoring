@@ -64,7 +64,7 @@ class AllEmergencyContactData(APIView):
 
 
 
-
+# New API view to get sensor history for the past 72 hours
 class GetSensorHistory(APIView):
     def post(self, request):
         sensor_id = request.data.get('sensor_id')
