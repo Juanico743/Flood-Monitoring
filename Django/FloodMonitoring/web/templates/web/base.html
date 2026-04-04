@@ -23,7 +23,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                 </svg>
             </div>
-            <span class="text-xl font-bold text-white tracking-tight">FloodGuard</span>
+            <span class="text-xl font-bold text-white tracking-tight">BYFLO</span>
         </div>
         
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto mt-4">
@@ -43,10 +43,10 @@
                     </svg>
                 </button>
 
-                <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 -translate-y-2" class="mt-1 ml-4 pl-6 space-y-1 border-l border-slate-800">
-                    <a href="#" class="block p-2 text-sm hover:text-blue-400 transition">Sensors</a>
-                    <a href="#" class="block p-2 text-sm hover:text-blue-400 transition">Thresholds</a>
-                    <a href="#" class="block p-2 text-sm hover:text-blue-400 transition">Emergency Contacts</a>
+                <div x-show="open" x-cloak class="mt-1 ml-4 pl-6 space-y-1 border-l border-slate-800">
+                    <a href="{% url 'sensor_crud' %}" class="block p-2 text-sm hover:text-blue-400 transition">Sensor Network</a>
+                    <a href="{% url 'threshold_crud' %}" class="block p-2 text-sm hover:text-blue-400 transition">Vehicle Thresholds</a>
+                    <a href="{% url 'contact_crud' %}" class="block p-2 text-sm hover:text-blue-400 transition">Emergency Directory</a>
                 </div>
             </div>
         </nav>
