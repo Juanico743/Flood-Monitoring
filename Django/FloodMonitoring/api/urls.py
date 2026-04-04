@@ -7,7 +7,8 @@ from .views import (
     AllEmergencyContactData, 
     AllSensorData, 
     AllThresholdData,
-    GetSensorHistory
+    GetSensorHistory,
+    GetWebChartData,
 )
 
 urlpatterns = [
@@ -24,4 +25,7 @@ urlpatterns = [
 
     # New endpoint to get sensor history  
     path('get-sensor-history/', GetSensorHistory.as_view(), name='get-sensor-history'),
+
+    # New endpoint to get web chart data
+    path('get-web-chart-data/', GetWebChartData.as_view(), name='get_web_chart_data'),
 ]

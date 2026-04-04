@@ -445,7 +445,7 @@ class _InfoState extends State<Info> {
                 dotData: const FlDotData(show: false),
                 gradient: const LinearGradient(
                   colors: [
-                    gradientStart,
+                      gradientStart,
                     gradientEnd,
                   ],
                   begin: Alignment.topCenter,

@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 
@@ -21,8 +22,6 @@ class VehicleFloodThreshold(models.Model):
         return self.vehicle if self.vehicle else "General Threshold"
 
 
-
-
 # Model to represent flood monitoring sensors and their data
 class Sensor(models.Model):
     sensor_id = models.CharField(max_length=50, unique=True, primary_key=True, help_text="e.g., sensor_01")
@@ -41,7 +40,6 @@ class Sensor(models.Model):
     def __str__(self):
         return f"{self.sensor_id} - {self.location_name}"
 
-        
 
 # Model to represent emergency contacts for flood situations
 class EmergencyContact(models.Model):
@@ -52,6 +50,7 @@ class EmergencyContact(models.Model):
     def __str__(self):
         return self.name
 
+
 # Model to represent sensor data readings
 class SensorData(models.Model):
     sensor = models.ForeignKey(Sensor, to_field='sensor_id',on_delete=models.CASCADE, related_name='data')
@@ -60,3 +59,13 @@ class SensorData(models.Model):
 
     def __str__(self):
         return f"{self.sensor.sensor_id} - {self.timestamp} - {self.water_level}cm"
+
+# Model to represent admin authentication 
+class AdminAuthentication(models.Model):
+    username = models.CharField(max_length=150, unique=True)
+    email = models.EmailField(unique=True, null=True, blank=True)
+    password = models.CharField(max_length=128)
+    date_created = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return self.username

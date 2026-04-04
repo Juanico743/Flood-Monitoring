@@ -34,6 +34,9 @@ ALLOWED_HOSTS = [
     'yeasty-rikki-nonchivalrously.ngrok-free.dev',
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://yeasty-rikki-nonchivalrously.ngrok-free.dev'
+]
 
 # Application definition
 
@@ -47,7 +50,9 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'django_apscheduler',
+    
     'api',
+    'web',
 ]
 
 MIDDLEWARE = [
@@ -86,8 +91,15 @@ WSGI_APPLICATION = 'myapp.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'flood_monitoring_db',
+        'USER': 'root',                
+        'PASSWORD': 'Admin@1234',    
+        'HOST': 'localhost',
+        'PORT': '3306',
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        },
     }
 }
 
@@ -111,19 +123,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'flood_monitoring_db',
-        'USER': 'root',                
-        'PASSWORD': 'Admin@1234',    
-        'HOST': 'localhost',
-        'PORT': '3306',
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-        },
-    }
-}
+
 
 
 MEDIA_URL = '/media/'
