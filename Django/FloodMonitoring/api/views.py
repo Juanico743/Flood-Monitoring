@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg
 from django.db.models.functions import TruncHour, TruncDay, TruncMonth
+from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from datetime import timedelta
 from .models import EmergencyContact, VehicleFloodThreshold, Sensor, SensorData
@@ -122,62 +123,66 @@ class GetWebChartData(APIView):
         sensor_id = request.data.get('sensor_id') 
         time_range = request.data.get('range', 'day') 
         
-        end_time = timezone.now()
+        now = timezone.now()
         
-        # Determine Range and Aggregation
         if time_range == 'year':
-            start_time = end_time - timedelta(days=365)
+            # Start exactly 11 months ago at the start of that month
+            start_time = (now - relativedelta(months=11)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             trunc_func = TruncMonth('timestamp')
             slots = 12
-            delta = timedelta(days=30) # Approximate for logic
         elif time_range == 'month':
-            start_time = end_time - timedelta(days=30)
+            start_time = (now - timedelta(days=30)).replace(hour=0, minute=0, second=0, microsecond=0)
             trunc_func = TruncDay('timestamp')
-            slots = 30
-            delta = timedelta(days=1)
-        else: # 'day'
-            start_time = end_time - timedelta(hours=24)
+            slots = 31
+        elif time_range == 'week':
+            start_time = (now - timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
+            trunc_func = TruncDay('timestamp')
+            slots = 8
+        else: # day
+            start_time = now - timedelta(hours=24)
             trunc_func = TruncHour('timestamp')
             slots = 24
-            delta = timedelta(hours=1)
 
-        # Fetch Data
-        query = SensorData.objects.filter(timestamp__range=(start_time, end_time))
+        # Fetch and Group
+        query = SensorData.objects.filter(timestamp__range=(start_time, now))
         if sensor_id != 'all':
             query = query.filter(sensor_id=sensor_id)
-            sensors = [get_object_or_404(Sensor, sensor_id=sensor_id)]
+            sensors = Sensor.objects.filter(sensor_id=sensor_id)
         else:
             sensors = Sensor.objects.all()
 
-        # Group data
         data_query = (
             query.annotate(slot=trunc_func)
             .values('slot', 'sensor_id')
             .annotate(avg_level=Avg('water_level'))
         )
 
-        # Create a map for quick lookup
+        # Create lookup map using ISO format strings
         history_map = {
             (item['sensor_id'], item['slot'].isoformat()): float(item['avg_level'] or 0.0)
             for item in data_query
         }
 
-        # Format Response for Chart.js
         datasets = []
         for s in sensors:
             sensor_height_cm = s.height * 100
             points = []
             
             for i in range(slots):
+                # Calculate the exact timestamp for this slot
                 if time_range == 'year':
-                    current_slot = (start_time + timedelta(days=i*30)).replace(day=1, hour=0, minute=0)
+                    current_slot = start_time + relativedelta(months=i)
+                elif time_range == 'month' or time_range == 'week':
+                    current_slot = start_time + timedelta(days=i)
                 else:
-                    current_slot = (start_time + delta * i).replace(minute=0, second=0, microsecond=0)
+                    current_slot = (start_time + timedelta(hours=i)).replace(minute=0, second=0, microsecond=0)
                 
                 slot_str = current_slot.isoformat()
                 
-                # Calculation Logic
+                # If no data exists, we assume water is at ground level (distance = sensor_height)
+                # resulting in flood_height = 0
                 dist_to_water = history_map.get((s.sensor_id, slot_str), sensor_height_cm)
+                
                 flood_cm = max(0, sensor_height_cm - dist_to_water)
                 level_ft = round(flood_cm / 30.48, 2)
                 
@@ -188,9 +193,4 @@ class GetWebChartData(APIView):
                 "data": points
             })
 
-        return Response({
-            "success": True,
-            "datasets": datasets
-        })
-
-
+        return Response({"success": True, "datasets": datasets})

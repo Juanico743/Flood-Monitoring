@@ -20,7 +20,8 @@
         <div class="flex bg-gray-100 p-1 rounded-lg">
             <button onclick="setTimeScale('year')" id="btn-year" class="px-4 py-2 rounded-md text-sm font-medium transition">Yearly</button>
             <button onclick="setTimeScale('month')" id="btn-month" class="px-4 py-2 rounded-md text-sm font-medium transition">Monthly</button>
-            <button onclick="setTimeScale('day')" id="btn-day" class="px-4 py-2 rounded-md text-sm font-medium transition bg-white shadow text-blue-600">Daily (24h)</button>
+            <button onclick="setTimeScale('week')" id="btn-week" class="px-4 py-2 rounded-md text-sm font-medium transition">Weekly</button>
+            <button onclick="setTimeScale('day')" id="btn-day" class="px-4 py-2 rounded-md text-sm font-medium transition bg-white shadow text-blue-600">Daily</button>
         </div>
     </div>
 
@@ -37,32 +38,25 @@
     const ctx = canvas.getContext('2d');
     let currentScale = 'day'; 
 
-    
     const gradientStart = '#448AFF'; 
     const gradientEnd = '#81D4FA';   
 
-  
     function getFillGradient(context) {
         const chartArea = context.chart.chartArea;
         if (!chartArea) return null;
-        
         const gradient = context.chart.ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
         gradient.addColorStop(0, 'rgba(68, 138, 255, 0.3)'); 
         gradient.addColorStop(1, 'rgba(129, 212, 250, 0.1)'); 
         return gradient;
     }
 
-    
     let floodChart = new Chart(ctx, {
         type: 'line',
         data: { datasets: [] },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
+            interaction: { mode: 'index', intersect: false },
             elements: {
                 point: {
                     radius: 0,           
@@ -71,18 +65,10 @@
                     hoverBackgroundColor: '#fff',
                     hoverBorderWidth: 3,
                 },
-                line: {
-                    borderWidth: 3,
-                    tension: 0.4,        // Smooth curves
-                    capBezierPoints: true
-                }
+                line: { borderWidth: 3, tension: 0.4, capBezierPoints: true }
             },
             plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                    labels: { usePointStyle: true }
-                }
+                legend: { display: true, position: 'top', labels: { usePointStyle: true } }
             },
             scales: {
                 x: {
@@ -92,7 +78,7 @@
                         displayFormats: { hour: 'HH:mm', day: 'MMM d', month: 'MMM yyyy' }
                     },
                     grid: { display: false }, 
-                    title: { display: true, text: 'Timeline (Left to Right)' }
+                    title: { display: true, text: 'Timeline' }
                 },
                 y: {
                     beginAtZero: true,
@@ -103,7 +89,6 @@
         }
     });
 
-    
     async function updateChartData() {
         const sensorId = document.getElementById('sensorSelect').value;
         const range = currentScale;
@@ -115,10 +100,7 @@
                     'Content-Type': 'application/json',
                     'X-CSRFToken': '{{ csrf_token }}' 
                 },
-                body: JSON.stringify({
-                    sensor_id: sensorId,
-                    range: range
-                })
+                body: JSON.stringify({ sensor_id: sensorId, range: range })
             });
 
             const result = await response.json();
@@ -126,7 +108,6 @@
             if (result.success) {
                 floodChart.data.datasets = result.datasets.map((ds, index) => {
                     const isSingle = result.datasets.length === 1;
-                    
                     return {
                         label: ds.label,
                         data: ds.data,
@@ -140,7 +121,18 @@
                     };
                 });
                 
-                floodChart.options.scales.x.time.unit = (range === 'year') ? 'month' : (range === 'month') ? 'day' : 'hour';
+                // UPDATED SCALE HANDLING
+                if (range === 'year') {
+                    floodChart.options.scales.x.time.unit = 'month';
+                    floodChart.options.scales.x.time.displayFormats = { month: 'MMM yyyy' };
+                } else if (range === 'month' || range === 'week') {
+                    floodChart.options.scales.x.time.unit = 'day';
+                    floodChart.options.scales.x.time.displayFormats = { day: 'MMM d' };
+                } else {
+                    floodChart.options.scales.x.time.unit = 'hour';
+                    floodChart.options.scales.x.time.displayFormats = { hour: 'HH:mm' };
+                }
+
                 floodChart.update();
             }
         } catch (error) {
@@ -155,15 +147,14 @@
 
     function setTimeScale(scale) {
         currentScale = scale;
-        ['year', 'month', 'day'].forEach(s => {
+        ['year', 'month', 'week', 'day'].forEach(s => {
             const btn = document.getElementById(`btn-${s}`);
-            btn.classList.remove('bg-white', 'shadow', 'text-blue-600');
+            if (btn) btn.classList.remove('bg-white', 'shadow', 'text-blue-600');
         });
         document.getElementById(`btn-${scale}`).classList.add('bg-white', 'shadow', 'text-blue-600');
         updateChartData(); 
     }
 
-  
     updateChartData();
 </script>
 {% endblock %}
