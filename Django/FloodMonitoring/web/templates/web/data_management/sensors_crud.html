@@ -5,25 +5,11 @@
 {% block content %}
 <style>
     /* Custom Scrollbar Styling - Minimalist/White-ish */
-    .custom-scroll::-webkit-scrollbar {
-        width: 6px;
-    }
-    .custom-scroll::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    .custom-scroll::-webkit-scrollbar-thumb {
-        background-color: #f1f5f9; 
-        border-radius: 20px;
-    }
-    .custom-scroll::-webkit-scrollbar-thumb:hover {
-        background-color: #e2e8f0;
-    }
-    /* Firefox support */
-    .custom-scroll {
-        scrollbar-width: thin;
-        scrollbar-color: #f1f5f9 transparent;
-        scrollbar-gutter: stable;
-    }
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background-color: #f1f5f9; border-radius: 20px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background-color: #e2e8f0; }
+    .custom-scroll { scrollbar-width: thin; scrollbar-color: #f1f5f9 transparent; scrollbar-gutter: stable; }
 </style>
 
 <div class="max-w-6xl mx-auto" 
@@ -33,6 +19,17 @@
         openDeleteModal: false,
         selectedSensor: {} 
      }">
+
+    {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+                <div class="p-4 rounded-xl {% if message.tags == 'success' %}bg-green-50 text-green-700 border border-green-200{% else %}bg-red-50 text-red-700 border border-red-200{% endif %} flex items-center gap-3 animate-fade-in-down">
+                    <span>{% if message.tags == 'success' %}✅{% else %}⚠️{% endif %}</span>
+                    <p class="font-bold text-sm">{{ message.message }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
      
     <div class="flex justify-between items-center mb-6">
         <div>
@@ -40,7 +37,7 @@
             <p class="text-sm text-slate-500 font-medium">Manage deployment nodes and connection tokens.</p>
         </div>
         <button @click="openAddModal = true" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 flex items-center gap-2">
-            <span class="text-xl">+</span> Add New Sensor
+            <span class="text-xl">+</span> Add Sensor
         </button>
     </div>
 
@@ -60,9 +57,7 @@
                 <tbody class="divide-y divide-slate-100">
                     {% for sensor in sensors %}
                     <tr class="hover:bg-blue-50/30 transition-colors group">
-                        <td class="p-4 text-xs font-mono text-slate-400">
-                            {{ forloop.counter }}
-                        </td>
+                        <td class="p-4 text-xs font-mono text-slate-400">{{ forloop.counter }}</td>
                         <td class="p-4">
                             <div class="font-mono text-blue-600 font-bold text-sm bg-blue-50 px-2 py-1 rounded-md inline-block">
                                 {{ sensor.sensor_id }}
@@ -143,39 +138,40 @@
             </div>
             
             <div class="overflow-y-auto p-8 flex-grow custom-scroll">
-                <form id="addForm" action="#">
+                <form id="addForm" method="POST" action="{% url 'add_sensor' %}">
+                    {% csrf_token %}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="md:col-span-2">
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Sensor Identification</label>
-                            <input type="text" placeholder="e.g., sensor_01" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
+                            <input type="text" name="sensor_id" required placeholder="e.g., sensor_01" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Location Name</label>
-                            <input type="text" placeholder="e.g., Near basketball Court" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition font-semibold">
+                            <input type="text" name="location_name" placeholder="e.g., Near basketball Court" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition font-semibold">
                         </div>
                         <div>
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Latitude</label>
-                            <input type="number" step="any" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
+                            <input type="number" name="latitude" step="any" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
                         </div>
                         <div>
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Longitude</label>
-                            <input type="number" step="any" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
+                            <input type="number" name="longitude" step="any" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
                         </div>
                         <div>
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Access Token</label>
-                            <input type="text" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition font-mono">
+                            <input type="text" name="token" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition font-mono">
                         </div>
                         <div>
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">PIN</label>
-                            <input type="text" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition font-mono">
+                            <input type="text" name="pin" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition font-mono">
                         </div>
                         <div>
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Radius (m)</label>
-                            <input type="number" step="0.1" value="100.0" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
+                            <input type="number" name="radius" step="0.1" value="100.0" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
                         </div>
                         <div>
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Sensor Height (m)</label>
-                            <input type="number" step="0.1" value="1.0" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
+                            <input type="number" name="height" step="0.1" value="1.0" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
                         </div>
                     </div>
                 </form>
@@ -203,43 +199,44 @@
             </div>
 
             <div class="overflow-y-auto p-8 flex-grow custom-scroll">
-                <form id="editForm" action="#">
+                <form id="editForm" method="POST" action="{% url 'edit_sensor' %}">
+                    {% csrf_token %}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="md:col-span-2">
                             <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                                 Sensor Identification 
                                 <span class="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded uppercase">Locked</span>
                             </label>
-                            <input type="text" x-model="selectedSensor.id" readonly class="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed outline-none font-mono">
+                            <input type="text" name="sensor_id" x-model="selectedSensor.id" readonly class="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed outline-none font-mono">
                         </div>
                         
                         <div class="md:col-span-2">
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Location Name</label>
-                            <input type="text" x-model="selectedSensor.location" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition font-semibold text-slate-700">
+                            <input type="text" name="location_name" x-model="selectedSensor.location" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition font-semibold text-slate-700">
                         </div>
                         <div>
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Latitude</label>
-                            <input type="number" step="any" x-model="selectedSensor.lat" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
+                            <input type="number" name="latitude" step="any" x-model="selectedSensor.lat" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
                         </div>
                         <div>
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Longitude</label>
-                            <input type="number" step="any" x-model="selectedSensor.lng" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
+                            <input type="number" name="longitude" step="any" x-model="selectedSensor.lng" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
                         </div>
                         <div>
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Access Token</label>
-                            <input type="text" x-model="selectedSensor.token" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition font-mono">
+                            <input type="text" name="token" x-model="selectedSensor.token" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition font-mono">
                         </div>
                         <div>
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">PIN</label>
-                            <input type="text" x-model="selectedSensor.pin" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition font-mono">
+                            <input type="text" name="pin" x-model="selectedSensor.pin" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition font-mono">
                         </div>
                         <div>
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Radius (Meters)</label>
-                            <input type="number" step="0.1" x-model="selectedSensor.radius" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
+                            <input type="number" name="radius" step="0.1" x-model="selectedSensor.radius" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
                         </div>
                         <div>
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Sensor Height (m)</label>
-                            <input type="number" step="0.1" x-model="selectedSensor.height" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
+                            <input type="number" name="height" step="0.1" x-model="selectedSensor.height" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
                         </div>
                     </div>
                 </form>
@@ -254,14 +251,16 @@
 
     <div x-show="openDeleteModal" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
         <div x-show="openDeleteModal" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100" class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center" @click.away="openDeleteModal = false">
-            <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
-                ⚠️
-            </div>
+            <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">⚠️</div>
             <h2 class="text-2xl font-bold text-slate-800 mb-2">Delete <span class="text-red-600" x-text="selectedSensor.id"></span>?</h2>
             <p class="text-slate-500 mb-8 leading-relaxed">This action cannot be undone. This node will be permanently removed from the sensor network.</p>
             <div class="flex flex-col gap-3">
-                <button type="button" class="bg-red-600 text-white w-full py-4 rounded-2xl font-bold shadow-lg shadow-red-200 hover:bg-red-700 transition active:scale-95">Yes, Delete Sensor</button>
-                <button type="button" @click="openDeleteModal = false" class="text-slate-500 font-bold py-3 hover:text-slate-700 transition">Cancel</button>
+                <form method="POST" action="{% url 'delete_sensor' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="sensor_id" :value="selectedSensor.id">
+                    <button type="submit" class="bg-red-600 text-white w-full py-4 rounded-2xl font-bold shadow-lg shadow-red-200 hover:bg-red-700 transition active:scale-95">Yes, Delete Sensor</button>
+                </form>
+                <button type="button" @click="openDeleteModal = false" class="text-slate-500 font-bold py-3 hover:text-slate-700 transition w-full">Cancel</button>
             </div>
         </div>
     </div>
