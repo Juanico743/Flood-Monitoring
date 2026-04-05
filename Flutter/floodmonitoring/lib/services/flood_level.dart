@@ -23,7 +23,7 @@ class BlynkService {
 
         if (measuredDistance != null) {
           // Calculate the actual flood height by subtracting sensor distance from total sensor height
-          double floodHeight = height - measuredDistance;
+          double floodHeight = (height * 100) - measuredDistance;
 
           // Prevent negative values if the water is below the expected ground level
           if (floodHeight < 0) floodHeight = 0;

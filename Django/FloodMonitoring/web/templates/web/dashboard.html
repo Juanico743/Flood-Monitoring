@@ -18,10 +18,37 @@
         </div>
 
         <div class="flex bg-gray-100 p-1 rounded-lg">
-            <button onclick="setTimeScale('year')" id="btn-year" class="px-4 py-2 rounded-md text-sm font-medium transition">Yearly</button>
-            <button onclick="setTimeScale('month')" id="btn-month" class="px-4 py-2 rounded-md text-sm font-medium transition">Monthly</button>
-            <button onclick="setTimeScale('week')" id="btn-week" class="px-4 py-2 rounded-md text-sm font-medium transition">Weekly</button>
-            <button onclick="setTimeScale('day')" id="btn-day" class="px-4 py-2 rounded-md text-sm font-medium transition bg-white shadow text-blue-600">Daily</button>
+            <button onclick="setTimeScale('year')" id="btn-year" 
+                    class="group relative px-4 py-2 rounded-md text-sm font-medium transition hover:bg-gray-200">
+                Yearly
+                <span class="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                    12 months
+                </span>
+            </button>
+
+            <button onclick="setTimeScale('month')" id="btn-month" 
+                    class="group relative px-4 py-2 rounded-md text-sm font-medium transition hover:bg-gray-200">
+                Monthly
+                <span class="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                    31 days
+                </span>
+            </button>
+
+            <button onclick="setTimeScale('week')" id="btn-week" 
+                    class="group relative px-4 py-2 rounded-md text-sm font-medium transition hover:bg-gray-200">
+                Weekly
+                <span class="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                    7 days
+                </span>
+            </button>
+
+            <button onclick="setTimeScale('day')" id="btn-day" 
+                    class="group relative px-4 py-2 rounded-md text-sm font-medium transition bg-white shadow text-blue-600">
+                Daily
+                <span class="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                    24 hrs
+                </span>
+            </button>
         </div>
     </div>
 
