@@ -1,9 +1,12 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Flood Monitoring{% endblock %}</title>
+    <title>BYFLO | {% block title %}{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'web/images/logo.png' %}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
@@ -17,24 +20,28 @@
 
     <aside class="w-64 bg-slate-900 flex-shrink-0 flex flex-col z-20">
         <div class="h-20 flex items-center px-6 border-b border-slate-800">
-            <div class="bg-blue-600 p-1.5 rounded-lg mr-3">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                </svg>
+            <div class="bg-white p-1 rounded-lg mr-3 shadow-sm flex items-center justify-center overflow-hidden">
+                <img src="{% static 'web/images/logo.png' %}" 
+                    alt="Byflo Logo" 
+                    class="h-7 w-7 object-contain">
             </div>
             <span class="text-xl font-bold text-white tracking-tight">BYFLO</span>
         </div>
         
         <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
             <a href="{% url 'dashboard' %}" class="flex items-center px-4 py-3 rounded-lg transition {% if request.resolver_match.url_name == 'dashboard' %}bg-blue-600 text-white font-semibold{% else %}text-slate-400 hover:bg-slate-800 hover:text-white{% endif %}">
-                <span class="mr-3">📊</span> 
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-3">
+                    <path fill-rule="evenodd" d="M2.25 2.25a.75.75 0 0 0 0 1.5H3v10.5a3 3 0 0 0 3 3h1.21l-1.172 3.513a.75.75 0 0 0 1.424.474l.329-.987h8.418l.33.987a.75.75 0 0 0 1.422-.474l-1.17-3.513H18a3 3 0 0 0 3-3V3.75h.75a.75.75 0 0 0 0-1.5H2.25Zm6.54 15h6.42l.5 1.5H8.29l.5-1.5Zm8.085-8.995a.75.75 0 1 0-.75-1.299 12.81 12.81 0 0 0-3.558 3.05L11.03 8.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l2.47-2.47 1.617 1.618a.75.75 0 0 0 1.146-.102 11.312 11.312 0 0 1 3.612-3.321Z" clip-rule="evenodd" />
+                </svg>
                 <span>Dashboard</span>
             </a>
 
             <div x-data="{ open: true }">
                 <button @click="open = !open" class="w-full flex items-center justify-between px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition group">
                     <div class="flex items-center">
-                        <span class="mr-3">🔧</span> 
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-3">
+                            <path fill-rule="evenodd" d="M12 6.75a5.25 5.25 0 0 1 6.775-5.025.75.75 0 0 1 .313 1.248l-3.32 3.319c.063.475.276.934.641 1.299.365.365.824.578 1.3.64l3.318-3.319a.75.75 0 0 1 1.248.313 5.25 5.25 0 0 1-5.472 6.756c-1.018-.086-1.87.1-2.309.634L7.344 21.3A3.298 3.298 0 1 1 2.7 16.657l8.684-7.151c.533-.44.72-1.291.634-2.309A5.342 5.342 0 0 1 12 6.75ZM4.117 19.125a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75h-.008a.75.75 0 0 1-.75-.75v-.008Z" clip-rule="evenodd" />
+                        </svg>
                         <span class="font-medium">Data Management</span>
                     </div>
                     <svg :class="open ? 'rotate-180' : ''" class="w-4 h-4 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -52,7 +59,9 @@
 
         <div class="p-3 border-t border-slate-800">
             <a href="{% url 'logout' %}" class="flex items-center px-4 py-3 text-red-400 hover:bg-red-950/30 rounded-lg transition group">
-                <span class="mr-3 group-hover:scale-110 transition-transform">🚪</span> 
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform">
+                    <path fill-rule="evenodd" d="M16.5 3.75a1.5 1.5 0 0 1 1.5 1.5v13.5a1.5 1.5 0 0 1-1.5 1.5h-6a1.5 1.5 0 0 1-1.5-1.5V15a.75.75 0 0 0-1.5 0v3.75a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V5.25a3 3 0 0 0-3-3h-6a3 3 0 0 0-3 3V9A.75.75 0 1 0 9 9V5.25a1.5 1.5 0 0 1 1.5-1.5h6ZM5.78 8.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 0 0 0 1.06l3 3a.75.75 0 0 0 1.06-1.06l-1.72-1.72H15a.75.75 0 0 0 0-1.5H4.06l1.72-1.72a.75.75 0 0 0 0-1.06Z" clip-rule="evenodd" />
+                </svg>
                 <span class="font-medium">Sign Out</span>
             </a>
         </div>
@@ -65,7 +74,7 @@
                 @online.window="isOnline = true"
                 @offline.window="isOnline = false">
                 
-                System Status: 
+                Current Status: 
                 <span :class="isOnline ? 'text-green-500' : 'text-red-500'" class="font-bold transition-colors duration-300">
                     ● <span x-text="isOnline ? 'Online                                                                      ' : 'Offline'">Active</span>
                 </span>
