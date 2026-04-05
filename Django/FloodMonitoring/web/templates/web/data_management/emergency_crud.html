@@ -101,7 +101,7 @@
     </div>
 
     <div x-show="openAddModal" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div x-show="openAddModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="bg-white rounded-3xl shadow-2xl max-w-lg w-full flex flex-col max-h-[85vh] overflow-hidden" @click.away="openAddModal = false">
+        <div x-show="openAddModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="bg-white rounded-3xl shadow-2xl max-w-lg w-full flex flex-col max-h-[85vh] overflow-hidden">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <div>
                     <h2 class="text-xl font-bold text-slate-800">Register New Contact</h2>
@@ -138,7 +138,7 @@
     </div>
 
     <div x-show="openEditModal" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div x-show="openEditModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="bg-white rounded-3xl shadow-2xl max-w-lg w-full flex flex-col max-h-[85vh] overflow-hidden" @click.away="openEditModal = false">
+        <div x-show="openEditModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="bg-white rounded-3xl shadow-2xl max-w-lg w-full flex flex-col max-h-[85vh] overflow-hidden">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-blue-50/50">
                 <div>
                     <h2 class="text-xl font-bold text-slate-800">Edit Contact</h2>
@@ -176,7 +176,7 @@
     </div>
 
     <div x-show="openDeleteModal" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-        <div x-show="openDeleteModal" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100" class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center" @click.away="openDeleteModal = false">
+        <div x-show="openDeleteModal" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100" class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center">
             <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">🗑️</div>
             <h2 class="text-2xl font-bold text-slate-800 mb-2">Remove Contact?</h2>
             <p class="text-slate-500 mb-8 leading-relaxed">Are you sure you want to remove <span class="font-semibold text-slate-700" x-text="selectedContact.name"></span> from the emergency directory?</p>

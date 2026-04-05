@@ -52,7 +52,7 @@
             <p class="text-sm text-slate-500 font-medium">Define water depth limits for safety alerts based on vehicle type.</p>
         </div>
         <button @click="openAddModal = true" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 flex items-center gap-2">
-            <span class="text-xl">+</span> Add New Threshold
+            <span class="text-xl">+</span> Add Threshold
         </button>
     </div>
 
@@ -133,7 +133,7 @@
     </div>
 
     <div x-show="openAddModal" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div x-show="openAddModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[85vh] overflow-hidden" @click.away="openAddModal = false">
+        <div x-show="openAddModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[85vh] overflow-hidden">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 flex-shrink-0">
                 <div>
                     <h2 class="text-xl font-bold text-slate-800">New Threshold</h2>
@@ -149,45 +149,23 @@
             <div class="overflow-y-auto p-8 flex-grow custom-scroll">
                 <form id="addThresholdForm" method="POST" action="{% url 'add_threshold' %}">
                     {% csrf_token %}
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="md:col-span-2">
+                    <div class="grid grid-cols-1 gap-6">
+                        <div>
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Vehicle Type</label>
-                            <input type="text" name="vehicle" required placeholder="e.g., Sedan, Motorcycle, SUV" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
+                            <input type="text" name="vehicle" required placeholder="e.g., Sedan, Motorcycle" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
                         </div>
 
-                        <div class="md:col-span-2 border-l-4 border-green-500 pl-4 bg-green-50/30 py-2 rounded-r-xl">
-                            <h3 class="text-sm font-bold text-green-700 uppercase mb-4 tracking-wider">Safe Range (cm)</h3>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Min Depth</label>
-                                    <input type="number" name="safe_min" value="0.00" step="0.01" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-green-500">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Max Depth</label>
-                                    <input type="number" name="safe_max" required step="0.01" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-green-500">
-                                </div>
+                        <div class="space-y-4">
+                            <div class="border-l-4 border-amber-500 pl-4 bg-amber-50/30 py-4 rounded-r-xl">
+                                <label class="block text-sm font-bold text-amber-700 uppercase mb-1 tracking-wider">Warning Trigger Point (cm)</label>
+                                <p class="text-[11px] text-amber-600 mb-3">When water reaches this height, status changes from <span class="font-bold">Safe</span> to <span class="font-bold">Warning</span>.</p>
+                                <input type="number" name="warning_min" min="0" required step="0.01" placeholder="e.g., 30.00" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500">
                             </div>
-                        </div>
 
-                        <div class="md:col-span-2 border-l-4 border-amber-500 pl-4 bg-amber-50/30 py-2 rounded-r-xl">
-                            <h3 class="text-sm font-bold text-amber-700 uppercase mb-4 tracking-wider">Warning Range (cm)</h3>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Min Depth</label>
-                                    <input type="number" name="warning_min" required step="0.01" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Max Depth</label>
-                                    <input type="number" name="warning_max" required step="0.01" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="md:col-span-2 border-l-4 border-red-500 pl-4 bg-red-50/30 py-2 rounded-r-xl">
-                            <h3 class="text-sm font-bold text-red-700 uppercase mb-4 tracking-wider">Danger Range (cm)</h3>
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Minimum Depth for Danger</label>
-                                <input type="number" name="danger_min" required step="0.01" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-red-500">
+                            <div class="border-l-4 border-red-500 pl-4 bg-red-50/30 py-4 rounded-r-xl">
+                                <label class="block text-sm font-bold text-red-700 uppercase mb-1 tracking-wider">Danger Trigger Point (cm)</label>
+                                <p class="text-[11px] text-red-600 mb-3">When water reaches this height, status changes from <span class="font-bold">Warning</span> to <span class="font-bold">Danger</span>.</p>
+                                <input type="number" name="danger_min" min="0" required step="0.01" placeholder="e.g., 50.00" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-red-500">
                             </div>
                         </div>
                     </div>
@@ -202,7 +180,7 @@
     </div>
 
     <div x-show="openEditModal" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div x-show="openEditModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[85vh] overflow-hidden" @click.away="openEditModal = false">
+        <div x-show="openEditModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[85vh] overflow-hidden">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-blue-50/50 flex-shrink-0">
                 <div>
                     <h2 class="text-xl font-bold text-slate-800">Edit Threshold</h2>
@@ -219,46 +197,23 @@
                 <form id="editThresholdForm" method="POST" action="{% url 'edit_threshold' %}">
                     {% csrf_token %}
                     <input type="hidden" name="threshold_id" x-model="selectedThreshold.id">
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="md:col-span-2">
+                    <div class="grid grid-cols-1 gap-6">
+                        <div>
                             <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Vehicle Type</label>
                             <input type="text" name="vehicle" x-model="selectedThreshold.vehicle" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition font-semibold">
                         </div>
 
-                        <div class="md:col-span-2 border-l-4 border-green-500 pl-4 bg-green-50/30 py-2 rounded-r-xl">
-                            <h3 class="text-sm font-bold text-green-700 uppercase mb-4 tracking-wider">Safe Range (cm)</h3>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Min Depth</label>
-                                    <input type="number" name="safe_min" step="0.01" x-model="selectedThreshold.s_min" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-green-500">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Max Depth</label>
-                                    <input type="number" name="safe_max" step="0.01" x-model="selectedThreshold.s_max" required class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-green-500">
-                                </div>
+                        <div class="space-y-4">
+                            <div class="border-l-4 border-amber-500 pl-4 bg-amber-50/30 py-4 rounded-r-xl">
+                                <label class="block text-sm font-bold text-amber-700 uppercase mb-1">Warning Trigger Point (cm)</label>
+                                <p class="text-[11px] text-amber-600 mb-3">When water reaches this height, status changes from <span class="font-bold">Safe</span> to <span class="font-bold">Warning</span>.</p>
+                                <input type="number" name="warning_min" min="0" step="0.01" x-model="selectedThreshold.w_min" required class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500">
                             </div>
-                        </div>
 
-                        <div class="md:col-span-2 border-l-4 border-amber-500 pl-4 bg-amber-50/30 py-2 rounded-r-xl">
-                            <h3 class="text-sm font-bold text-amber-700 uppercase mb-4 tracking-wider">Warning Range (cm)</h3>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Min Depth</label>
-                                    <input type="number" name="warning_min" step="0.01" x-model="selectedThreshold.w_min" required class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Max Depth</label>
-                                    <input type="number" name="warning_max" step="0.01" x-model="selectedThreshold.w_max" required class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="md:col-span-2 border-l-4 border-red-500 pl-4 bg-red-50/30 py-2 rounded-r-xl">
-                            <h3 class="text-sm font-bold text-red-700 uppercase mb-4 tracking-wider">Danger Range (cm)</h3>
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Minimum Depth for Danger</label>
-                                <input type="number" name="danger_min" step="0.01" x-model="selectedThreshold.d_min" required class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-red-500">
+                            <div class="border-l-4 border-red-500 pl-4 bg-red-50/30 py-4 rounded-r-xl">
+                                <label class="block text-sm font-bold text-red-700 uppercase mb-1">Danger Trigger Point (cm)</label>
+                                <p class="text-[11px] text-red-600 mb-3">When water reaches this height, status changes from <span class="font-bold">Warning</span> to <span class="font-bold">Danger</span>.</p>
+                                <input type="number" name="danger_min" min="0" step="0.01" x-model="selectedThreshold.d_min" required class="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-red-500">
                             </div>
                         </div>
                     </div>
@@ -273,7 +228,7 @@
     </div>
 
     <div x-show="openDeleteModal" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-        <div x-show="openDeleteModal" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100" class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center" @click.away="openDeleteModal = false">
+        <div x-show="openDeleteModal" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100" class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center">
             <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
                 🗑️
             </div>

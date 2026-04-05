@@ -8,7 +8,6 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         [x-cloak] { display: none !important; }
-        /* Custom scrollbar for a sleeker sidebar */
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
@@ -16,45 +15,44 @@
 </head>
 <body class="bg-slate-50 flex h-screen overflow-hidden font-sans">
 
-    <aside class="w-64 bg-slate-900 text-slate-300 flex-shrink-0 flex flex-col shadow-xl z-20">
-        <div class="p-6 flex items-center gap-3 border-b border-slate-800">
-            <div class="bg-blue-500 p-2 rounded-lg text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <aside class="w-64 bg-slate-900 flex-shrink-0 flex flex-col z-20">
+        <div class="h-20 flex items-center px-6 border-b border-slate-800">
+            <div class="bg-blue-600 p-1.5 rounded-lg mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                 </svg>
             </div>
             <span class="text-xl font-bold text-white tracking-tight">BYFLO</span>
         </div>
         
-        <nav class="flex-1 p-4 space-y-2 overflow-y-auto mt-4">
-            <a href="{% url 'dashboard' %}" class="flex items-center p-3 rounded-xl hover:bg-slate-800 hover:text-white transition group {% if request.resolver_match.url_name == 'dashboard' %}bg-blue-600 text-white{% endif %}">
-                <span class="mr-3 text-lg group-hover:scale-110 transition-transform">📊</span> 
-                <span class="font-medium">Dashboard</span>
+        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            <a href="{% url 'dashboard' %}" class="flex items-center px-4 py-3 rounded-lg transition {% if request.resolver_match.url_name == 'dashboard' %}bg-blue-600 text-white font-semibold{% else %}text-slate-400 hover:bg-slate-800 hover:text-white{% endif %}">
+                <span class="mr-3">📊</span> 
+                <span>Dashboard</span>
             </a>
 
             <div x-data="{ open: true }">
-                <button @click="open = !open" class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-800 hover:text-white transition group">
+                <button @click="open = !open" class="w-full flex items-center justify-between px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition group">
                     <div class="flex items-center">
-                        <span class="mr-3 text-lg group-hover:rotate-12 transition-transform">🔧</span> 
+                        <span class="mr-3">🔧</span> 
                         <span class="font-medium">Data Management</span>
                     </div>
-                    <svg :class="open ? 'rotate-180' : ''" class="w-4 h-4 transition-transform duration-200 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg :class="open ? 'rotate-180' : ''" class="w-4 h-4 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
 
-                <div x-show="open" x-cloak class="mt-1 ml-4 pl-6 space-y-1 border-l border-slate-800">
-                    <a href="{% url 'sensor_crud' %}" class="block p-2 text-sm hover:text-blue-400 transition">Sensor Network</a>
-                    <a href="{% url 'threshold_crud' %}" class="block p-2 text-sm hover:text-blue-400 transition">Vehicle Thresholds</a>
-                    <a href="{% url 'contact_crud' %}" class="block p-2 text-sm hover:text-blue-400 transition">Emergency Directory</a>
+                <div x-show="open" x-cloak class="mt-1 space-y-1">
+                    <a href="{% url 'sensor_crud' %}" class="block pl-11 pr-4 py-2 text-sm {% if request.resolver_match.url_name == 'sensor_crud' %}text-blue-400{% else %}text-slate-500 hover:text-slate-200{% endif %}">Sensor Network</a>
+                    <a href="{% url 'threshold_crud' %}" class="block pl-11 pr-4 py-2 text-sm {% if request.resolver_match.url_name == 'threshold_crud' %}text-blue-400{% else %}text-slate-500 hover:text-slate-200{% endif %}">Vehicle Thresholds</a>
+                    <a href="{% url 'contact_crud' %}" class="block pl-11 pr-4 py-2 text-sm {% if request.resolver_match.url_name == 'contact_crud' %}text-blue-400{% else %}text-slate-500 hover:text-slate-200{% endif %}">Emergency Directory</a>
                 </div>
             </div>
         </nav>
 
-        <div class="p-4 border-t border-slate-800">
-            <div class="px-3 text-[10px] text-slate-500 uppercase font-black tracking-widest mb-3">Settings</div>
-            <a href="{% url 'logout' %}" class="flex items-center p-3 text-red-400 hover:bg-red-900/20 rounded-xl transition group">
-                <span class="mr-3 text-lg group-hover:-translate-x-1 transition-transform">🚪</span> 
+        <div class="p-3 border-t border-slate-800">
+            <a href="{% url 'logout' %}" class="flex items-center px-4 py-3 text-red-400 hover:bg-red-950/30 rounded-lg transition group">
+                <span class="mr-3 group-hover:scale-110 transition-transform">🚪</span> 
                 <span class="font-medium">Sign Out</span>
             </a>
         </div>
@@ -62,8 +60,15 @@
 
     <div class="flex-1 flex flex-col overflow-hidden">
         <header class="bg-white border-b border-slate-200 z-10 px-8 py-4 flex justify-between items-center">
-            <div class="text-slate-400 text-sm italic">
-                System Status: <span class="text-green-500 font-bold">● Active</span>
+            <div class="text-slate-400 text-sm italic flex items-center gap-2" 
+                x-data="{ isOnline: navigator.onLine }"
+                @online.window="isOnline = true"
+                @offline.window="isOnline = false">
+                
+                System Status: 
+                <span :class="isOnline ? 'text-green-500' : 'text-red-500'" class="font-bold transition-colors duration-300">
+                    ● <span x-text="isOnline ? 'Online                                                                      ' : 'Offline'">Active</span>
+                </span>
             </div>
             
             <div class="flex items-center gap-6">
@@ -82,6 +87,9 @@
             {% endblock %}
         </main>
     </div>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 </body>
 </html>

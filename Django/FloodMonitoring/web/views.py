@@ -1,10 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, Max
 from api.models import AdminAuthentication, Sensor, VehicleFloodThreshold, EmergencyContact
 from django.utils import timezone
 from datetime import datetime
-
+from decimal import Decimal
+import re
 
 def login_view(request):
     if 'admin_id' in request.session:
@@ -97,10 +98,27 @@ def emergency_crud_view(request):
 
 
 
+def generate_next_sensor_id():
+    last_sensor = Sensor.objects.all().order_by('sensor_id').last()
+    
+    if not last_sensor:
+        return "sensor_01"
+    
+    match = re.search(r'(\d+)$', last_sensor.sensor_id)
+    if match:
+        next_number = int(match.group(1)) + 1
+        return f"sensor_{next_number:02d}"
+    
+    return "sensor_01"
+
+
 def add_sensor(request):
     if request.method == 'POST':
+        # AUTOMATIC ID GENERATION
+        new_id = generate_next_sensor_id()
+        
         Sensor.objects.create(
-            sensor_id=request.POST.get('sensor_id'),
+            sensor_id=new_id, # Use the generated ID
             location_name=request.POST.get('location_name'),
             latitude=request.POST.get('latitude'),
             longitude=request.POST.get('longitude'),
@@ -109,8 +127,8 @@ def add_sensor(request):
             radius=request.POST.get('radius', 100.0),
             height=request.POST.get('height', 1.0)
         )
-        messages.success(request, "Added new sensor.")
-    return redirect('sensor_crud') 
+        messages.success(request, f"Added new sensor: {new_id}")
+    return redirect('sensor_crud')
 
 def edit_sensor(request):
     if request.method == 'POST':
@@ -142,18 +160,25 @@ def delete_sensor(request):
 def add_threshold(request):
     if request.method == 'POST':
         vehicle = request.POST.get('vehicle')
-        
+        w_min = Decimal(request.POST.get('warning_min'))
+        d_min = Decimal(request.POST.get('danger_min'))
+
+        # Simple Validation
+        if w_min >= d_min:
+            messages.error(request, "Warning point must be lower than Danger point.")
+            return redirect('threshold_crud')
+
         if VehicleFloodThreshold.objects.filter(vehicle__iexact=vehicle).exists():
             messages.error(request, f"Threshold for '{vehicle}' already exists.")
             return redirect('threshold_crud')
 
         VehicleFloodThreshold.objects.create(
             vehicle=vehicle,
-            safe_min=request.POST.get('safe_min', 0),
-            safe_max=request.POST.get('safe_max'),
-            warning_min=request.POST.get('warning_min'),
-            warning_max=request.POST.get('warning_max'),
-            danger_min=request.POST.get('danger_min'),
+            safe_min=0,
+            safe_max=w_min - Decimal('0.01'), 
+            warning_min=w_min,
+            warning_max=d_min - Decimal('0.01'), 
+            danger_min=d_min,
         )
         messages.success(request, f"Added threshold for '{vehicle}'.")
     return redirect('threshold_crud')
@@ -163,12 +188,19 @@ def edit_threshold(request):
         threshold_id = request.POST.get('threshold_id')
         threshold = get_object_or_404(VehicleFloodThreshold, id=threshold_id)
         
+        w_min = Decimal(request.POST.get('warning_min'))
+        d_min = Decimal(request.POST.get('danger_min'))
+
+        if w_min >= d_min:
+            messages.error(request, "Warning point must be lower than Danger point.")
+            return redirect('threshold_crud')
+
         threshold.vehicle = request.POST.get('vehicle')
-        threshold.safe_min = request.POST.get('safe_min')
-        threshold.safe_max = request.POST.get('safe_max')
-        threshold.warning_min = request.POST.get('warning_min')
-        threshold.warning_max = request.POST.get('warning_max')
-        threshold.danger_min = request.POST.get('danger_min')
+        threshold.safe_min = 0
+        threshold.safe_max = w_min - Decimal('0.01')
+        threshold.warning_min = w_min
+        threshold.warning_max = d_min - Decimal('0.01')
+        threshold.danger_min = d_min
         threshold.save()
         
         messages.success(request, f"Updated {threshold.vehicle} settings.")
