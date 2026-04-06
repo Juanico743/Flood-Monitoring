@@ -8,6 +8,7 @@ from datetime import datetime
 from decimal import Decimal
 import re
 
+# Login page with session management
 def login_view(request):
     if 'admin_id' in request.session:
         login_time_str = request.session.get('login_time')
@@ -40,7 +41,7 @@ def login_view(request):
 
     return render(request, 'web/login.html')
 
-
+# Dashboard view with session check
 def dashboard_view(request):
     if 'admin_id' not in request.session:
         return redirect('login')
@@ -51,71 +52,103 @@ def dashboard_view(request):
         'username': request.session.get('username')
     })
 
-
+# Logout view to clear session
 def logout_view(request):
     request.session.flush() 
     return redirect('login')
 
 
-
-
-
-
+# Sensors CRUD view
 def sensors_crud_view(request):
     if 'admin_id' not in request.session:
         return redirect('login')
 
+    search_query = request.GET.get('search', '')
     sensor_list = Sensor.objects.all().order_by('sensor_id') 
+    
+    if search_query:
+        sensor_list = sensor_list.filter(
+            Q(sensor_id__icontains=search_query) | 
+            Q(location_name__icontains=search_query) | 
+            Q(token__icontains=search_query)
+        )
     
     paginator = Paginator(sensor_list, 6)
     page_number = request.GET.get('page')
     sensors = paginator.get_page(page_number)
 
-    username = request.session.get('username', 'Admin') 
-    
-    return render(request, 'web/data_management/sensors_crud.html', {
+    context = {
         'sensors': sensors, 
-        'username': username  
-    })
+        'username': request.session.get('username', 'Admin'),
+        'search_query': search_query
+    }
 
+    if request.headers.get('HX-Request'):
+        return render(request, 'web/data_management/partials/sensor_table_content.html', context)
+    
+    return render(request, 'web/data_management/sensors_crud.html', context)
+
+# Thresholds CRUD view
 def threshold_crud_view(request):
     if 'admin_id' not in request.session:
         return redirect('login')
-
-    threshold_list = VehicleFloodThreshold.objects.all().order_by('id') 
+        
+    search_query = request.GET.get('search', '')
+    threshold_list = VehicleFloodThreshold.objects.all().order_by('id')
+    
+    if search_query:
+        threshold_list = threshold_list.filter(
+            Q(vehicle__icontains=search_query)
+        )
     
     paginator = Paginator(threshold_list, 8)
     page_number = request.GET.get('page')
     thresholds = paginator.get_page(page_number)
 
-    username = request.session.get('username', 'Admin')
-    
-    return render(request, 'web/data_management/thresholds_crud.html', {
+    context = {
         'thresholds': thresholds,
-        'username': username  
-    })
+        'username': request.session.get('username', 'Admin'),
+        'search_query': search_query
+    }
 
+    if request.headers.get('HX-Request'):
+        return render(request, 'web/data_management/partials/threshold_table_content.html', context)
+    
+    return render(request, 'web/data_management/thresholds_crud.html', context)
+
+# Emergency Contacts CRUD view
 def emergency_crud_view(request):
     if 'admin_id' not in request.session:
         return redirect('login')
         
-    contacts_list = EmergencyContact.objects.all().order_by('name') 
+    search_query = request.GET.get('search', '')
+    contacts_list = EmergencyContact.objects.all().order_by('id')
+    
+    if search_query:
+        contacts_list = contacts_list.filter(
+            Q(name__icontains=search_query) | 
+            Q(description__icontains=search_query) | 
+            Q(phone_number__icontains=search_query)
+        )
     
     paginator = Paginator(contacts_list, 8) 
-    
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    username = request.session.get('username', 'Admin')
-    
-    return render(request, 'web/data_management/emergency_crud.html', {
+    context = {
         'emergencyContacts': page_obj, 
-        'username': username  
-    })
+        'username': request.session.get('username', 'Admin'),
+        'search_query': search_query
+    }
+
+    # FIX: Return the full table content (rows + pagination) for HTMX
+    if request.headers.get('HX-Request'):
+        return render(request, 'web/data_management/partials/emergency_table_content.html', context)
+    
+    return render(request, 'web/data_management/emergency_crud.html', context)
 
 
-
-
+# Helper function to generate the next sensor ID
 def generate_next_sensor_id():
     last_sensor = Sensor.objects.all().order_by('sensor_id').last()
     
@@ -129,7 +162,7 @@ def generate_next_sensor_id():
     
     return "sensor_01"
 
-
+# Add Sensor view with automatic ID generation
 def add_sensor(request):
     if request.method == 'POST':
         # AUTOMATIC ID GENERATION
@@ -148,6 +181,7 @@ def add_sensor(request):
         messages.success(request, f"Added new sensor: {new_id}")
     return redirect('sensor_crud')
 
+# Edit Sensor view
 def edit_sensor(request):
     if request.method == 'POST':
         sensor_id = request.POST.get('sensor_id')
@@ -165,6 +199,7 @@ def edit_sensor(request):
         messages.success(request, f"Updated sensor '{sensor_id}' settings.")
     return redirect('sensor_crud')
 
+# Delete Sensor view
 def delete_sensor(request):
     if request.method == 'POST':
         sensor_id = request.POST.get('sensor_id')
@@ -174,7 +209,7 @@ def delete_sensor(request):
     return redirect('sensor_crud')
 
 
-
+# Thresholds CRUD views
 def add_threshold(request):
     if request.method == 'POST':
         vehicle = request.POST.get('vehicle')
@@ -201,6 +236,7 @@ def add_threshold(request):
         messages.success(request, f"Added threshold for '{vehicle}'.")
     return redirect('threshold_crud')
 
+# Edit Threshold view
 def edit_threshold(request):
     if request.method == 'POST':
         threshold_id = request.POST.get('threshold_id')
@@ -224,6 +260,7 @@ def edit_threshold(request):
         messages.success(request, f"Updated {threshold.vehicle} settings.")
     return redirect('threshold_crud')
 
+# Delete Threshold view
 def delete_threshold(request):
     if request.method == 'POST':
         threshold_id = request.POST.get('threshold_id')
@@ -240,7 +277,7 @@ def delete_threshold(request):
     return redirect('threshold_crud')
 
 
-
+# Emergency Contacts views
 def add_contact(request):
     if request.method == 'POST':
         name = request.POST.get('name')
@@ -253,8 +290,9 @@ def add_contact(request):
             description=description
         )
         messages.success(request, f"Contact '{name}' added successfully!")
-    return redirect('contact_crud') # Replace with your actual URL name
+    return redirect('emergency_crud')
 
+# Edit Contact view
 def edit_contact(request):
     if request.method == 'POST':
         contact_id = request.POST.get('contact_id')
@@ -266,8 +304,9 @@ def edit_contact(request):
         contact.save()
         
         messages.success(request, f"Updated {contact.name} successfully.")
-    return redirect('contact_crud')
+    return redirect('emergency_crud')
 
+# Delete Contact view
 def delete_contact(request):
     if request.method == 'POST':
         contact_id = request.POST.get('contact_id')
@@ -275,7 +314,7 @@ def delete_contact(request):
         name = contact.name
         contact.delete()
         messages.success(request, f"Removed {name} from directory.")
-    return redirect('contact_crud')
+    return redirect('emergency_crud')
 
 
 

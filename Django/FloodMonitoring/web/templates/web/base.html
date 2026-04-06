@@ -9,6 +9,7 @@
     <link rel="icon" type="image/png" href="{% static 'web/images/logo.png' %}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <style>
         [x-cloak] { display: none !important; }
         ::-webkit-scrollbar { width: 5px; }
@@ -52,7 +53,7 @@
                 <div x-show="open" x-cloak class="mt-1 space-y-1">
                     <a href="{% url 'sensor_crud' %}" class="block pl-11 pr-4 py-2 text-sm {% if request.resolver_match.url_name == 'sensor_crud' %}text-blue-400{% else %}text-slate-500 hover:text-slate-200{% endif %}">Sensor Network</a>
                     <a href="{% url 'threshold_crud' %}" class="block pl-11 pr-4 py-2 text-sm {% if request.resolver_match.url_name == 'threshold_crud' %}text-blue-400{% else %}text-slate-500 hover:text-slate-200{% endif %}">Vehicle Thresholds</a>
-                    <a href="{% url 'contact_crud' %}" class="block pl-11 pr-4 py-2 text-sm {% if request.resolver_match.url_name == 'contact_crud' %}text-blue-400{% else %}text-slate-500 hover:text-slate-200{% endif %}">Emergency Directory</a>
+                    <a href="{% url 'emergency_crud' %}" class="block pl-11 pr-4 py-2 text-sm {% if request.resolver_match.url_name == 'emergency_crud' %}text-blue-400{% else %}text-slate-500 hover:text-slate-200{% endif %}">Emergency Directory</a>
                 </div>
             </div>
         </nav>
