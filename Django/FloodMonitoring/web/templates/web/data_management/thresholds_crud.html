@@ -91,7 +91,7 @@
                     {% for threshold in thresholds %}
                     <tr class="hover:bg-blue-50/30 transition-colors group">
                         <td class="p-4 text-xs font-mono text-slate-400">
-                            {{ forloop.counter }}
+                            {{ thresholds.start_index|add:forloop.counter0 }}
                         </td>
                         <td class="p-4">
                             <div class="font-bold text-slate-700 tracking-tight">
@@ -151,7 +151,41 @@
                     {% endfor %}
                 </tbody>
             </table>
+        {% if thresholds.has_other_pages %}
+        <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-200 flex items-center justify-between">
+            <div class="text-sm text-slate-500 font-medium">
+                Showing <span class="text-slate-800 font-bold">{{ thresholds.start_index }}</span> to <span class="text-slate-800 font-bold">{{ thresholds.end_index }}</span> of {{ thresholds.paginator.count }}
+            </div>
+            
+            <div class="flex items-center gap-2">
+                {% if thresholds.has_previous %}
+                    <a href="?page={{ thresholds.previous_page_number }}" class="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                        </svg>
+                    </a>
+                {% endif %}
+
+                <div class="flex items-center gap-1">
+                    {% for num in thresholds.paginator.page_range %}
+                        {% if thresholds.number == num %}
+                            <span class="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-sm shadow-md shadow-blue-100">{{ num }}</span>
+                        {% elif num > thresholds.number|add:'-3' and num < thresholds.number|add:'3' %}
+                            <a href="?page={{ num }}" class="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition text-sm font-medium">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                {% if thresholds.has_next %}
+                    <a href="?page={{ thresholds.next_page_number }}" class="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                        </svg>
+                    </a>
+                {% endif %}
+            </div>
         </div>
+        {% endif %}
     </div>
 
     <div x-show="openAddModal" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">

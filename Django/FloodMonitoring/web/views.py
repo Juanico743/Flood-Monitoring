@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q, Max
 from api.models import AdminAuthentication, Sensor, VehicleFloodThreshold, EmergencyContact
+from django.core.paginator import Paginator
 from django.utils import timezone
 from datetime import datetime
 from decimal import Decimal
@@ -59,15 +60,21 @@ def logout_view(request):
 
 
 
+
 def sensors_crud_view(request):
     if 'admin_id' not in request.session:
         return redirect('login')
 
-    sensors = Sensor.objects.all()
+    sensor_list = Sensor.objects.all().order_by('sensor_id') 
+    
+    paginator = Paginator(sensor_list, 6)
+    page_number = request.GET.get('page')
+    sensors = paginator.get_page(page_number)
+
     username = request.session.get('username', 'Admin') 
     
     return render(request, 'web/data_management/sensors_crud.html', {
-        'sensors': sensors,
+        'sensors': sensors, 
         'username': username  
     })
 
@@ -75,7 +82,12 @@ def threshold_crud_view(request):
     if 'admin_id' not in request.session:
         return redirect('login')
 
-    thresholds = VehicleFloodThreshold.objects.all()
+    threshold_list = VehicleFloodThreshold.objects.all().order_by('id') 
+    
+    paginator = Paginator(threshold_list, 8)
+    page_number = request.GET.get('page')
+    thresholds = paginator.get_page(page_number)
+
     username = request.session.get('username', 'Admin')
     
     return render(request, 'web/data_management/thresholds_crud.html', {
@@ -87,11 +99,17 @@ def emergency_crud_view(request):
     if 'admin_id' not in request.session:
         return redirect('login')
         
-    contacts = EmergencyContact.objects.all()
+    contacts_list = EmergencyContact.objects.all().order_by('name') 
+    
+    paginator = Paginator(contacts_list, 8) 
+    
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
     username = request.session.get('username', 'Admin')
     
     return render(request, 'web/data_management/emergency_crud.html', {
-        'emergencyContacts': contacts,
+        'emergencyContacts': page_obj, 
         'username': username  
     })
 
