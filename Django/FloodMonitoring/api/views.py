@@ -6,7 +6,6 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Avg
 from django.db.models.functions import TruncHour, TruncDay, TruncMonth
 from dateutil.relativedelta import relativedelta
-from django.utils import timezone
 from datetime import timedelta
 from .models import EmergencyContact, VehicleFloodThreshold, Sensor, SensorData
 from .serializers import ( 
@@ -63,57 +62,56 @@ class AllEmergencyContactData(APIView):
             "emergencyContacts": serializer.data
         })
 
-# API view to get sensor history for the past 72 hours
+# API view to get sensor history for the past 24 hours
 class GetSensorHistory(APIView):
     def post(self, request):
         sensor_id = request.data.get('sensor_id')
-        
         sensor = get_object_or_404(Sensor, sensor_id=sensor_id)
         sensor_height_cm = sensor.height * 100 
 
-        end_time = timezone.now()
-        start_time = end_time - timedelta(hours=72)
+        now_local = timezone.localtime(timezone.now())
+        end_time = now_local.replace(minute=0, second=0, microsecond=0)
+        start_time = end_time - timedelta(hours=23)
 
-        data = (
-            SensorData.objects.filter(
-                sensor_id=sensor_id,
-                timestamp__range=(start_time, end_time)
-            )
-            .annotate(hour=TruncHour('timestamp'))
-            .values('hour')
-            .annotate(avg_level=Avg('water_level')) 
-            .order_by('hour')
-        )
+        data_query = SensorData.objects.filter(
+            sensor_id=sensor_id,
+            timestamp__range=(start_time, end_time)
+        ).values('timestamp', 'water_level')
+
+        hourly_totals = {} 
+        
+        for entry in data_query:
+            local_ts = timezone.localtime(entry['timestamp'])
+            hour_key = local_ts.strftime('%Y-%m-%d %H:00')
+            
+            if hour_key not in hourly_totals:
+                hourly_totals[hour_key] = []
+            hourly_totals[hour_key].append(float(entry['water_level'] or 0.0))
 
         history_map = {
-            item['hour'].strftime('%Y-%m-%d %H:00'): float(item['avg_level'] or 0.0) 
-            for item in data
+            key: sum(val_list) / len(val_list) 
+            for key, val_list in hourly_totals.items()
         }
         
         spots = []
-        labels = []
+        labels = [] 
         
-        for i in range(72):
-            current_slot = (start_time + timedelta(hours=i)).replace(minute=0, second=0, microsecond=0)
+        for i in range(24):
+            current_slot = start_time + timedelta(hours=i)
             slot_str = current_slot.strftime('%Y-%m-%d %H:00')
             
+            time_label = current_slot.strftime('%b %d, %H:%M') 
+            labels.append(time_label)
+
             distance_to_water = history_map.get(slot_str, sensor_height_cm)
+            flood_height_cm = max(0, sensor_height_cm - distance_to_water)
+            level_in_feet = round(flood_height_cm / 30.48, 2)
             
-            flood_height_cm = sensor_height_cm - distance_to_water
-            
-            if flood_height_cm < 0:
-                flood_height_cm = 0
-            
-            level_in_feet = flood_height_cm / 30.48 
-            
-            spots.append({"x": float(i), "y": round(level_in_feet, 2)})
-            
-            if i in [12, 36, 60]:
-                labels.append(current_slot.strftime('%b %d'))
+            spots.append({"x": float(i), "y": level_in_feet})
 
         return Response({
             "success": True,
-            "labels": labels,
+            "labels": labels, 
             "hourlyData": spots
         })
 
@@ -123,27 +121,21 @@ class GetWebChartData(APIView):
         sensor_id = request.data.get('sensor_id') 
         time_range = request.data.get('range', 'day') 
         
-        now = timezone.now()
+        now = timezone.localtime(timezone.now())
         
         if time_range == 'year':
-            # Start exactly 11 months ago at the start of that month
             start_time = (now - relativedelta(months=11)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            trunc_func = TruncMonth('timestamp')
             slots = 12
         elif time_range == 'month':
             start_time = (now - timedelta(days=30)).replace(hour=0, minute=0, second=0, microsecond=0)
-            trunc_func = TruncDay('timestamp')
             slots = 31
         elif time_range == 'week':
             start_time = (now - timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
-            trunc_func = TruncDay('timestamp')
             slots = 8
         else: # day
-            start_time = now - timedelta(hours=24)
-            trunc_func = TruncHour('timestamp')
+            start_time = (now - timedelta(hours=23)).replace(minute=0, second=0, microsecond=0)
             slots = 24
 
-        # Fetch and Group
         query = SensorData.objects.filter(timestamp__range=(start_time, now))
         if sensor_id != 'all':
             query = query.filter(sensor_id=sensor_id)
@@ -151,16 +143,29 @@ class GetWebChartData(APIView):
         else:
             sensors = Sensor.objects.all()
 
-        data_query = (
-            query.annotate(slot=trunc_func)
-            .values('slot', 'sensor_id')
-            .annotate(avg_level=Avg('water_level'))
-        )
+        raw_data = query.values('sensor_id', 'timestamp', 'water_level')
 
-        # Create lookup map using ISO format strings
+        history_totals = {} 
+
+        for entry in raw_data:
+            local_ts = timezone.localtime(entry['timestamp'])
+            s_id = entry['sensor_id']
+            
+            if time_range == 'year':
+                bucket_dt = local_ts.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            elif time_range == 'month' or time_range == 'week':
+                bucket_dt = local_ts.replace(hour=0, minute=0, second=0, microsecond=0)
+            else: # day
+                bucket_dt = local_ts.replace(minute=0, second=0, microsecond=0)
+            
+            key = (s_id, bucket_dt.isoformat())
+            if key not in history_totals:
+                history_totals[key] = []
+            history_totals[key].append(float(entry['water_level'] or 0.0))
+
         history_map = {
-            (item['sensor_id'], item['slot'].isoformat()): float(item['avg_level'] or 0.0)
-            for item in data_query
+            key: sum(val_list) / len(val_list) 
+            for key, val_list in history_totals.items()
         }
 
         datasets = []
@@ -169,18 +174,15 @@ class GetWebChartData(APIView):
             points = []
             
             for i in range(slots):
-                # Calculate the exact timestamp for this slot
                 if time_range == 'year':
                     current_slot = start_time + relativedelta(months=i)
                 elif time_range == 'month' or time_range == 'week':
                     current_slot = start_time + timedelta(days=i)
                 else:
-                    current_slot = (start_time + timedelta(hours=i)).replace(minute=0, second=0, microsecond=0)
+                    current_slot = start_time + timedelta(hours=i)
                 
                 slot_str = current_slot.isoformat()
                 
-                # If no data exists, we assume water is at ground level (distance = sensor_height)
-                # resulting in flood_height = 0
                 dist_to_water = history_map.get((s.sensor_id, slot_str), sensor_height_cm)
                 
                 flood_cm = max(0, sensor_height_cm - dist_to_water)
@@ -194,3 +196,5 @@ class GetWebChartData(APIView):
             })
 
         return Response({"success": True, "datasets": datasets})
+
+

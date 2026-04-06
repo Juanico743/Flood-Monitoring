@@ -353,13 +353,13 @@ class _InfoState extends State<Info> {
   /// ----- HISTORY GRAPH -----
   Widget _historyGraph() {
     return _card(
-      title: "3-Day Flood Levels (Hourly)",
+      title: "24-Hour Flood Levels (Hourly)",
       child: SizedBox(
-        height: 200,
+        height: 250,
         child: LineChart(
           LineChartData(
             minX: 0,
-            maxX: 71,
+            maxX: 23,
             lineTouchData: LineTouchData(
               getTouchedSpotIndicator: (LineChartBarData barData, List<int> spotIndexes) {
                 return spotIndexes.map((index) {
@@ -382,25 +382,55 @@ class _InfoState extends State<Info> {
                 }).toList();
               },
               touchTooltipData: LineTouchTooltipData(
-                getTooltipColor: (touchedSpot) => Colors.blueAccent,
+                getTooltipColor: (touchedSpot) => Colors.white,
+                tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                tooltipMargin: 10,
                 getTooltipItems: (List<LineBarSpot> touchedSpots) {
                   return touchedSpots.map((LineBarSpot touchedSpot) {
+                    int index = touchedSpot.x.toInt();
+
+                    String dateTimeLabel = (index >= 0 && index < labels.length)
+                        ? labels[index]
+                        : "Loading...";
+
                     return LineTooltipItem(
-                      "${touchedSpot.y.toStringAsFixed(1)} ft",
-                      const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      '',
+                      const TextStyle(fontSize: 0),
+                      children: [
+                        TextSpan(
+                          text: "$dateTimeLabel\n",
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextSpan(
+                          text: "${touchedSpot.y.toStringAsFixed(2)}",
+                          style: const TextStyle(
+                            color: Colors.blueAccent,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const TextSpan(
+                          text: " ft",
+                          style: TextStyle(
+                            color: Colors.blueAccent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     );
                   }).toList();
                 },
               ),
             ),
-
             gridData: FlGridData(
               show: true,
               drawVerticalLine: true,
-              checkToShowVerticalLine: (value) => value % 24 == 0,
+              checkToShowVerticalLine: (value) => value % 6 == 0,
               getDrawingVerticalLine: (value) => FlLine(
                 color: Colors.grey[300]!,
                 strokeWidth: 1,
@@ -423,12 +453,17 @@ class _InfoState extends State<Info> {
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
+                  reservedSize: 30,
                   interval: 1,
                   getTitlesWidget: (value, meta) {
-                    if (labels.isEmpty) return const SizedBox.shrink();
-                    if (value == 12) return _dateLabel(labels[0]);
-                    if (value == 36) return _dateLabel(labels[1]);
-                    if (value == 60) return _dateLabel(labels[2]);
+                    int index = value.toInt();
+                    if (labels.isEmpty || index < 0 || index >= labels.length) {
+                      return const SizedBox.shrink();
+                    }
+
+                    if (index % 4 == 0 || index == 23) {
+                      return _dateLabel(labels[index]);
+                    }
                     return const SizedBox.shrink();
                   },
                 ),
@@ -439,27 +474,24 @@ class _InfoState extends State<Info> {
               LineChartBarData(
                 spots: hourlyData,
                 isCurved: true,
-                curveSmoothness: 0.35,
+                curveSmoothness: 0.1,
                 barWidth: 2,
                 isStrokeCapRound: true,
                 dotData: const FlDotData(show: false),
                 gradient: const LinearGradient(
-                  colors: [
-                      gradientStart,
-                    gradientEnd,
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                  colors: [gradientEnd, gradientStart],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
                 ),
                 belowBarData: BarAreaData(
                   show: true,
                   gradient: LinearGradient(
                     colors: [
+                      gradientEnd.withOpacity(0.0),
                       gradientStart.withOpacity(0.3),
-                      gradientEnd.withOpacity(0.1),
                     ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
                   ),
                 ),
               ),
@@ -472,16 +504,30 @@ class _InfoState extends State<Info> {
 
   /// ----- DATE LABEL WIDGET -----
   Widget _dateLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8.0),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: Colors.blueAccent[700],
-          fontWeight: FontWeight.bold,
-          fontSize: 11,
+    String militaryTime = text.contains(',') ? text.split(',')[1].trim() : text;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 1.5,
+          height: 4,
+          decoration: BoxDecoration(
+            color: Colors.grey[300],
+            borderRadius: BorderRadius.circular(2),
+          ),
         ),
-      ),
+        const SizedBox(height: 6),
+        Text(
+          militaryTime,
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w700,
+            fontSize: 10,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
     );
   }
 }
