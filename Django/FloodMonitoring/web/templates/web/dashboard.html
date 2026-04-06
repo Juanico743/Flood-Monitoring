@@ -49,6 +49,14 @@
                     24 hrs
                 </span>
             </button>
+
+            <button onclick="setTimeScale('hour')" id="btn-hour" 
+                    class="group relative px-4 py-2 rounded-md text-sm font-medium transition hover:bg-gray-200">
+                Hourly
+                <span class="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                    60 mins
+                </span>
+            </button>
         </div>
     </div>
 
@@ -148,16 +156,19 @@
                     };
                 });
                 
-                // UPDATED SCALE HANDLING
                 if (range === 'year') {
                     floodChart.options.scales.x.time.unit = 'month';
                     floodChart.options.scales.x.time.displayFormats = { month: 'MMM yyyy' };
                 } else if (range === 'month' || range === 'week') {
                     floodChart.options.scales.x.time.unit = 'day';
                     floodChart.options.scales.x.time.displayFormats = { day: 'MMM d' };
-                } else {
+                } else if (range === 'day') {
                     floodChart.options.scales.x.time.unit = 'hour';
                     floodChart.options.scales.x.time.displayFormats = { hour: 'HH:mm' };
+                } else { 
+                    floodChart.options.scales.x.time.unit = 'minute';
+                    floodChart.options.scales.x.time.stepSize = 5; 
+                    floodChart.options.scales.x.time.displayFormats = { minute: 'HH:mm' };
                 }
 
                 floodChart.update();
@@ -174,12 +185,12 @@
 
     function setTimeScale(scale) {
         currentScale = scale;
-        ['year', 'month', 'week', 'day'].forEach(s => {
+        ['hour', 'year', 'month', 'week', 'day'].forEach(s => {
             const btn = document.getElementById(`btn-${s}`);
             if (btn) btn.classList.remove('bg-white', 'shadow', 'text-blue-600');
         });
         document.getElementById(`btn-${scale}`).classList.add('bg-white', 'shadow', 'text-blue-600');
-        updateChartData(); 
+        updateChartData();
     }
 
     updateChartData();

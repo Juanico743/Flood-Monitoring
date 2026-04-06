@@ -119,10 +119,11 @@ class GetSensorHistory(APIView):
 class GetWebChartData(APIView):
     def post(self, request):
         sensor_id = request.data.get('sensor_id') 
-        time_range = request.data.get('range', 'day') 
+        time_range = request.data.get('range', 'hour') # Default to hour
         
         now = timezone.localtime(timezone.now())
         
+        # --- 1. SET UP TIME SLOTS & RANGES ---
         if time_range == 'year':
             start_time = (now - relativedelta(months=11)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             slots = 12
@@ -132,9 +133,14 @@ class GetWebChartData(APIView):
         elif time_range == 'week':
             start_time = (now - timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
             slots = 8
-        else: # day
+        elif time_range == 'day':
             start_time = (now - timedelta(hours=23)).replace(minute=0, second=0, microsecond=0)
             slots = 24
+        else: # hour (current hour showing data every 5 mins)
+            # Show the last 60 minutes of data
+            start_time = (now - timedelta(minutes=55)).replace(second=0, microsecond=0)
+            # 60 minutes / 5 minutes = 12 slots
+            slots = 12
 
         query = SensorData.objects.filter(timestamp__range=(start_time, now))
         if sensor_id != 'all':
@@ -144,19 +150,23 @@ class GetWebChartData(APIView):
             sensors = Sensor.objects.all()
 
         raw_data = query.values('sensor_id', 'timestamp', 'water_level')
-
         history_totals = {} 
 
+        # --- 2. BUCKETIZE DATA ---
         for entry in raw_data:
             local_ts = timezone.localtime(entry['timestamp'])
             s_id = entry['sensor_id']
             
             if time_range == 'year':
                 bucket_dt = local_ts.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            elif time_range == 'month' or time_range == 'week':
+            elif time_range in ['month', 'week']:
                 bucket_dt = local_ts.replace(hour=0, minute=0, second=0, microsecond=0)
-            else: # day
+            elif time_range == 'day':
                 bucket_dt = local_ts.replace(minute=0, second=0, microsecond=0)
+            else: # hour (5-minute bucket logic)
+                # Rounds down to the nearest 5-minute mark (e.g., 12:07 becomes 12:05)
+                minute_bucket = (local_ts.minute // 5) * 5
+                bucket_dt = local_ts.replace(minute=minute_bucket, second=0, microsecond=0)
             
             key = (s_id, bucket_dt.isoformat())
             if key not in history_totals:
@@ -168,21 +178,25 @@ class GetWebChartData(APIView):
             for key, val_list in history_totals.items()
         }
 
+        # --- 3. GENERATE DATASETS ---
         datasets = []
         for s in sensors:
-            sensor_height_cm = s.height * 100
+            sensor_height_cm = float(s.height) * 100
             points = []
             
             for i in range(slots):
                 if time_range == 'year':
                     current_slot = start_time + relativedelta(months=i)
-                elif time_range == 'month' or time_range == 'week':
+                elif time_range in ['month', 'week']:
                     current_slot = start_time + timedelta(days=i)
-                else:
+                elif time_range == 'day':
                     current_slot = start_time + timedelta(hours=i)
+                else: # hour
+                    current_slot = start_time + timedelta(minutes=i*5)
                 
                 slot_str = current_slot.isoformat()
                 
+                # Fetch data, default to sensor_height (0 flood) if no data found
                 dist_to_water = history_map.get((s.sensor_id, slot_str), sensor_height_cm)
                 
                 flood_cm = max(0, sensor_height_cm - dist_to_water)
