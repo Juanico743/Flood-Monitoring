@@ -151,6 +151,8 @@ class _MapScreenState extends State<MapScreen> {
 
   int currentMenuCardPage = 0;
 
+  bool useOpenFreeMapStyle = true;
+
   // ========================================
   // INITIALIZATION (initState)
   // ========================================
@@ -1451,7 +1453,7 @@ class _MapScreenState extends State<MapScreen> {
                   : _center,
               zoom: 15.0,
             ),
-            mapType: _currentMapType,
+            mapType: useOpenFreeMapStyle ? MapType.none : _currentMapType,
             markers: _markers,
             circles: _circles,
             polylines: _polylines,
@@ -1459,7 +1461,21 @@ class _MapScreenState extends State<MapScreen> {
             compassEnabled: false,
             myLocationEnabled: false,
             zoomControlsEnabled: false,
-            tileOverlays: showFloodZones ? getFloodTileOverlays() : {},
+            tileOverlays: {
+              // Keep your original flood zones layer if toggled active
+              if (showFloodZones) ...getFloodTileOverlays(),
+
+              if (useOpenFreeMapStyle)
+                TileOverlay(
+                  tileOverlayId: const TileOverlayId('openfreemap_liberty_layer'),
+                  tileProvider: UrlTileProvider(
+                    /// 🔑 Using Carto's public mirror avoids the User-Agent blocking bug,
+                    /// rendering the OSM infrastructure layout immediately!
+                    urlTemplate: 'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                  ),
+                  tileSize: 256,
+                ),
+            },
 
             //minMaxZoomPreference: const MinMaxZoomPreference(13.0, 18.0),
           ),
