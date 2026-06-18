@@ -11,6 +11,8 @@ import 'package:floodmonitoring/services/url_tile_provider.dart';
 import 'package:floodmonitoring/services/weather.dart';
 import 'package:floodmonitoring/utils/converters.dart';
 import 'package:floodmonitoring/utils/style.dart';
+import 'package:floodmonitoring/widgets/alert_popup.dart';
+import 'package:floodmonitoring/widgets/map_info_cards.dart';
 import 'package:floodmonitoring/widgets/map_settings_popup.dart';
 import 'package:floodmonitoring/widgets/search_popup.dart';
 import 'package:floodmonitoring/widgets/toast.dart';
@@ -146,6 +148,8 @@ class _MapScreenState extends State<MapScreen> {
   };
 
   String? addressName;
+
+  int currentMenuCardPage = 0;
 
   // ========================================
   // INITIALIZATION (initState)
@@ -410,6 +414,12 @@ class _MapScreenState extends State<MapScreen> {
     } else {
       stopAlert();
     }
+
+    if (inside){
+      insideFloodZone();
+    } else {
+      outsideFloodZone();
+    }
   }
 
   LatLng? _smoothedLatLng;
@@ -432,6 +442,22 @@ class _MapScreenState extends State<MapScreen> {
     _smoothedLatLng = LatLng(lat, lng);
 
     return _smoothedLatLng!;
+  }
+
+
+  void insideFloodZone() {
+    if (selectedVehicle.isEmpty) return;
+    if (!insideAlertZone) {
+      showAlertModal(context);
+      setState(() {
+        insideAlertZone = true;
+      });
+    }
+  }
+  void outsideFloodZone() {
+    setState(() {
+      insideAlertZone = false;
+    });
   }
 
   bool displayAlert = false;
@@ -1526,6 +1552,13 @@ class _MapScreenState extends State<MapScreen> {
 
                           showFloodZones = (selectedLayer == "Flood GIS");
                         });
+                        if (selectedLayer == "Flood GIS") {
+                          Future.delayed(Duration.zero, () {
+                            if (mounted) {
+                              showInfoHeatMap(context);
+                            }
+                          });
+                        }
                       },
                     );
                   },
@@ -2079,7 +2112,12 @@ class _MapScreenState extends State<MapScreen> {
                                         ? "${UnitConverter.cmToFeet(double.tryParse(data!['floodHeight'].toString()) ?? 0).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')} ft"
                                         : "-"
                                 ),
-                                _infoRow("Distance", "${data?['distance'] ?? "-"} cm"),
+                                _infoRow(
+                                  "Range",
+                                  selectedSensorId != null && sensors.containsKey(selectedSensorId)
+                                      ? "${sensors[selectedSensorId]!['radius']} m"
+                                      : "-",
+                                ),
                                 _statusRow(
                                   "Status",
                                   (selectedVehicle.isEmpty)
@@ -2791,6 +2829,35 @@ class _MapScreenState extends State<MapScreen> {
                                       // Define the list of vehicles to avoid repeating code
                                       final List<Widget> vehicleTiles = [
                                         vehicleSelection(
+                                          name: 'Walk',
+                                          imagePath: 'assets/images/vehicle/walk.png',
+                                          highlightColor: Colors.blueAccent,
+                                          onTap: () {
+                                            setState(() {
+                                              tempSelectedVehicle = selectedVehicle;
+                                              selectedVehicle = 'Walk';
+                                            });
+                                            VehicleInfoPopup.show(
+                                              context,
+                                              "Walk",
+                                              onConfirm: (v) {
+                                                setState(() {
+                                                  selectedVehicle = 'Walk';
+                                                  showMainSheet = false;
+                                                  showDirectionSheet = true;
+                                                  _goToUser();
+                                                  fetchDataForAllSensors();
+                                                });
+                                              },
+                                              onCancel: (v) {
+                                                setState(() {
+                                                  selectedVehicle = tempSelectedVehicle;
+                                                });
+                                              },
+                                            );
+                                          },
+                                        ),
+                                        vehicleSelection(
                                           name: 'Bicycle',
                                           imagePath: 'assets/images/vehicle/bicycle.png',
                                           highlightColor: Colors.blueAccent,
@@ -3098,6 +3165,98 @@ class _MapScreenState extends State<MapScreen> {
                                     ],
                                   ),
 
+                                  const SizedBox(height: 30),
+                                  const Divider(
+                                    color: Colors.grey,
+                                    thickness: 1,
+                                    indent: 20,
+                                    endIndent: 20,
+                                  ),
+                                  const SizedBox(height: 30),
+                                  Container(
+                                    height: 250,
+                                    width: double.infinity,
+                                    color: Colors.transparent,
+                                    child: StatefulBuilder(
+                                      builder: (context, setCarouselState) {
+                                        final int cardCount = 3;
+                                        const Color designBorderColor = Color(0xff3fa9f5);
+
+                                        return Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            /// 1. Swipeable Cards Carousel
+                                            SizedBox(
+                                              height: 210,
+                                              width: double.infinity,
+                                              child: PageView.builder(
+                                                itemCount: cardCount,
+                                                onPageChanged: (index) {
+                                                  setCarouselState(() {
+                                                    currentMenuCardPage = index;
+                                                  });
+                                                },
+                                                itemBuilder: (context, index) {
+                                                  return Padding(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.blue[50],
+                                                        borderRadius: BorderRadius.circular(14),
+                                                        border: Border.all(
+                                                          color: designBorderColor,
+                                                          width: 1.5,
+                                                        ),
+                                                        boxShadow: [
+                                                          BoxShadow(
+                                                            color: Colors.black.withOpacity(0.06),
+                                                            blurRadius: 10,
+                                                            offset: const Offset(0, 4),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                                                      child: Center(
+                                                        child: buildCardContent(index),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+
+                                            const SizedBox(height: 12),
+
+                                            /// 2. Centered Pagination Capsule
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black.withOpacity(0.50),
+                                                borderRadius: BorderRadius.circular(20),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: List.generate(
+                                                  cardCount,
+                                                      (dotIndex) => AnimatedContainer(
+                                                    duration: const Duration(milliseconds: 250),
+                                                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                                                    height: 7,
+                                                    width: currentMenuCardPage == dotIndex ? 18 : 7,
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white.withOpacity(currentMenuCardPage == dotIndex ? 1.0 : 0.4),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ),
                                   const SizedBox(height: 30),
                                   const Divider(
                                     color: Colors.grey,

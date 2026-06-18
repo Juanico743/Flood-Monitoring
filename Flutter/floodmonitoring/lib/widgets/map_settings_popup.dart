@@ -266,3 +266,257 @@ Widget mapImageOption({
     ),
   );
 }
+
+void showInfoHeatMap(BuildContext context) {
+  final List<String> cardImages = [
+    'assets/images/cards/FHM1.png',
+    'assets/images/cards/FHM2.png',
+    'assets/images/cards/FHM3.png',
+    'assets/images/cards/FHM4.png',
+  ];
+
+  // Border colors for the 4 distinct cards
+  final List<Color> cardBorderColors = [
+    Colors.blue,       // Card 1 Border
+    Colors.red,        // Card 2 Border
+    Colors.orange,     // Card 3 Border
+    Colors.yellow,     // Card 4 Border
+  ];
+
+  // Bottom gradient solid colors (Card 1 is now White)
+  final List<Color> cardGradientColors = [
+    Colors.white,      // Card 1 Gradient Bottom
+    Colors.red,        // Card 2 Gradient Bottom
+    Colors.orange,     // Card 3 Gradient Bottom
+    Colors.yellow,     // Card 4 Gradient Bottom
+  ];
+
+  final List<Map<String, String>> cardContent = [
+    {"title": "Flood Risk Levels", "sub": ""},
+    {"title": "High Hazard", "sub": "Over 1.5 meters"},
+    {"title": "Medium Hazard", "sub": "0.5 to 1.5 meters"},
+    {"title": "Low Hazard", "sub": "Less than 0.5 meters"},
+  ];
+
+  showDialog(
+    context: context,
+    barrierDismissible: true,
+    builder: (context) {
+      int currentPage = 0;
+
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+        child: Container(
+          width: 380,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 20,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              /// Close ("X") Button
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.grey),
+                  onPressed: () => Navigator.pop(context),
+                  splashRadius: 20,
+                ),
+              ),
+
+              /// Main Dialog Body
+              StatefulBuilder(
+                builder: (context, setPopupState) {
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 48, 20, 20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        /// 1. Swipeable Cards Carousel
+                        SizedBox(
+                          height: 220,
+                          child: PageView.builder(
+                            itemCount: cardImages.length,
+                            onPageChanged: (index) {
+                              setPopupState(() {
+                                currentPage = index;
+                              });
+                            },
+                            itemBuilder: (context, index) {
+                              final Color borderColor = cardBorderColors[index % cardBorderColors.length];
+                              final Color gradientColor = cardGradientColors[index % cardGradientColors.length];
+                              final Map<String, String> content = cardContent[index];
+
+                              // Use dark text for White (index 0) and Yellow (index 3) cards
+                              final bool useDarkText = index == 0 || index == 3;
+
+                              final Color titleColor = useDarkText ? Colors.black : Colors.white;
+                              final Color subTextColor = useDarkText ? Colors.black87 : Colors.white.withOpacity(0.85);
+
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Stack(
+                                    children: [
+                                      /// Layer 1: Background Image
+                                      Positioned.fill(
+                                        child: Image.asset(
+                                          cardImages[index],
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              color: Colors.grey.shade200,
+                                              child: const Center(
+                                                child: Icon(Icons.broken_image, color: Colors.grey, size: 40),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+
+                                      /// Layer 2: Overlay Container with Gradient
+                                      Positioned.fill(
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(14),
+                                            border: Border.all(
+                                              color: borderColor,
+                                              width: 3.0,
+                                            ),
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                              colors: [
+                                                Colors.transparent,
+                                                gradientColor.withOpacity(0.5),
+                                                gradientColor,
+                                              ],
+                                              stops: const [0.0, 0.5, 1.0],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+
+                                      /// Layer 3: Text Content (Bottom Left)
+                                      Positioned(
+                                        left: 16,
+                                        bottom: 16,
+                                        right: 16,
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            // 🔴 Circular Colored Dot (Only for Cards 2, 3, 4)
+                                            if (index > 0) ...[
+                                              Container(
+                                                width: 12,
+                                                height: 12,
+                                                decoration: BoxDecoration(
+                                                    color: borderColor,
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                      color: Colors.white,
+                                                      width: 2,
+                                                    ),
+                                                    boxShadow: const [
+                                                      BoxShadow(
+                                                        color: Colors.black12,
+                                                        blurRadius: 2,
+                                                      )
+                                                    ]
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                            ],
+
+                                            // 📝 Title and Subtext grouped together
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    content["title"]!,
+                                                    style: TextStyle(
+                                                      fontFamily: 'AvenirNext',
+                                                      fontSize: 19,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: titleColor,
+                                                      letterSpacing: -0.3,
+                                                    ),
+                                                  ),
+                                                  if (content["sub"]!.isNotEmpty) ...[
+                                                    const SizedBox(height: 1),
+                                                    Text(
+                                                      content["sub"]!,
+                                                      style: TextStyle(
+                                                        fontFamily: 'AvenirNext',
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.w500,
+                                                        color: subTextColor,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        /// 2. Centered Pagination Capsule (Outside Card Layout)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.50),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(
+                              cardImages.length,
+                                  (dotIndex) => AnimatedContainer(
+                                duration: const Duration(milliseconds: 250),
+                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                height: 7,
+                                width: currentPage == dotIndex ? 18 : 7,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(currentPage == dotIndex ? 1.0 : 0.4),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}

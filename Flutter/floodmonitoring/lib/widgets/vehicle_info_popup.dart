@@ -300,12 +300,19 @@ class VehicleInfoPopup {
       );
     }
 
+    final walkT = findThreshold("Walk");
     final bicycleT = findThreshold("Bicycle");
     final motorcycleT = findThreshold("Motorcycle");
     final carT = findThreshold("Car");
     final truckT = findThreshold("Truck");
 
     return {
+      "Walk": _VehicleFloodInfo(
+        description: "Walking through floodwaters is highly dangerous. Even shallow, moving water can sweep an adult off their feet, hide hidden debris, open manholes, or carry harmful bacteria. Avoid wading whenever possible.",
+        safe: _formatRange(walkT["safeRange_cm"]),
+        warning: _formatRange(walkT["warningRange_cm"]),
+        danger: _formatRange(walkT["dangerRange_cm"]),
+      ),
       "Bicycle": _VehicleFloodInfo(
         description: "Bicycles are extremely vulnerable to flooding. Even shallow water can affect balance, braking, and visibility. Riding through flooded areas is highly risky and should be avoided.",
         safe: _formatRange(bicycleT["safeRange_cm"]),
