@@ -298,7 +298,12 @@ class _InfoState extends State<Info> {
       title: "Sensor Details",
       child: Column(
         children: [
-          _item("Location", "${sensor['location']}"),
+          _item(
+            "Location",
+            sensor['location'] != null && sensor['location'].toString().length > 12
+                ? '${sensor['location'].toString().substring(0, 12)}...'
+                : "${sensor['location']}",
+          ),
           _item("Monitoring Radius", "${sensor['radius']} m"),
           _item("Monitoring Height", "${sensor['height']} m"),
           _item("Connection", "Online"),

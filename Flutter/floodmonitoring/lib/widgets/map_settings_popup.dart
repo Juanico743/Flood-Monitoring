@@ -226,7 +226,7 @@ Widget mapImageOption({
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: selected ? Colors.blue : Colors.transparent,
-          width: 2,
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
@@ -391,7 +391,7 @@ void showInfoHeatMap(BuildContext context) {
                                             borderRadius: BorderRadius.circular(14),
                                             border: Border.all(
                                               color: borderColor,
-                                              width: 3.0,
+                                              width: 1.5,
                                             ),
                                             gradient: LinearGradient(
                                               begin: Alignment.topCenter,

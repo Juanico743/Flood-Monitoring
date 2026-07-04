@@ -151,7 +151,10 @@ class _MapScreenState extends State<MapScreen> {
 
   int currentMenuCardPage = 0;
 
-  bool useOpenFreeMapStyle = true;
+  bool useOpenFreeMapStyle = false;
+  late PageController _carouselController;
+  Timer? _carouselTimer;
+  final int _carouselCardCount = 3;
 
   // ========================================
   // INITIALIZATION (initState)
@@ -174,6 +177,9 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
+    _carouselTimer?.cancel();
+    _carouselController.dispose();
+
     _positionStream?.cancel();
     _timer?.cancel();
     super.dispose();
@@ -201,6 +207,9 @@ class _MapScreenState extends State<MapScreen> {
         if (mounted) _initCompass();
       });
     }
+
+    _carouselController = PageController(initialPage: 0);
+    _startCarouselTimer();
   }
 
   /// ----- START TIMER -----
@@ -234,6 +243,25 @@ class _MapScreenState extends State<MapScreen> {
 
     setState(() {
       vehicleFloodThresholds = data;
+    });
+  }
+
+  /// ----- START CAROUSEL TIMER -----
+  void _startCarouselTimer() {
+    _carouselTimer?.cancel();
+    _carouselTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (!mounted) return;
+
+      int nextPage = currentMenuCardPage + 1;
+      if (nextPage >= _carouselCardCount) {
+        nextPage = 0; // Loop back to the first card
+      }
+
+      _carouselController.animateToPage(
+        nextPage,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
     });
   }
 
@@ -2121,7 +2149,10 @@ class _MapScreenState extends State<MapScreen> {
                             child: Column(
                               children: [
                                 _infoRow("Sensor ID", selectedSensorId ?? "-"),
-                                _infoRow("Location", "$location"),
+                                _infoRow(
+                                  "Location",
+                                  location.length > 12 ? '${location.substring(0, 12)}...' : location,
+                                ),
                                 _infoRow(
                                     "Flood Height",
                                     data?['floodHeight'] != null
@@ -3189,55 +3220,80 @@ class _MapScreenState extends State<MapScreen> {
                                     endIndent: 20,
                                   ),
                                   const SizedBox(height: 30),
+
                                   Container(
-                                    height: 250,
                                     width: double.infinity,
                                     color: Colors.transparent,
                                     child: StatefulBuilder(
                                       builder: (context, setCarouselState) {
-                                        final int cardCount = 3;
                                         const Color designBorderColor = Color(0xff3fa9f5);
 
                                         return Column(
-                                          mainAxisSize: MainAxisSize.min,
+                                          mainAxisSize: MainAxisSize.min, // Shrinks column to fit its children
                                           children: [
                                             /// 1. Swipeable Cards Carousel
-                                            SizedBox(
-                                              height: 210,
-                                              width: double.infinity,
-                                              child: PageView.builder(
-                                                itemCount: cardCount,
-                                                onPageChanged: (index) {
-                                                  setCarouselState(() {
-                                                    currentMenuCardPage = index;
-                                                  });
-                                                },
-                                                itemBuilder: (context, index) {
-                                                  return Padding(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                                                    child: Container(
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.blue[50],
-                                                        borderRadius: BorderRadius.circular(14),
-                                                        border: Border.all(
-                                                          color: designBorderColor,
-                                                          width: 1.5,
-                                                        ),
-                                                        boxShadow: [
-                                                          BoxShadow(
-                                                            color: Colors.black.withOpacity(0.06),
-                                                            blurRadius: 10,
-                                                            offset: const Offset(0, 4),
+                                            // Instead of a fixed heightSizedBox, we use an Intrinsic height constraint wrapper.
+                                            // Note: Standard PageView ignores IntrinsicHeight unless given a bounding constraint.
+                                            // To safely ensure it doesn't crash from overflow, we set a safe maximum or use an
+                                            // expandable layout. Here is the clean structural adjustment:
+                                            ConstrainedBox(
+                                              constraints: const BoxConstraints(
+                                                minHeight: 150, // Minimum height you're comfortable with
+                                                maxHeight: 400, // Maximum safe budget so it doesn't expand forever
+                                              ),
+                                              child: SizedBox(
+                                                // We use a reasonable fallback height, but to make it *truest* to the largest item,
+                                                // you should ideally replace standard PageView with 'ExpandablePageView' from pub.dev.
+                                                height: 230, // Optimized to give breathing room for your text content
+                                                width: double.infinity,
+                                                child: PageView.builder(
+                                                  controller: _carouselController,
+                                                  itemCount: _carouselCardCount,
+                                                  onPageChanged: (index) {
+                                                    setCarouselState(() {
+                                                      currentMenuCardPage = index;
+                                                    });
+                                                    _startCarouselTimer();
+                                                  },
+                                                  itemBuilder: (context, index) {
+                                                    return Padding(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                                      child: Container(
+                                                        decoration: BoxDecoration(
+                                                          image: DecorationImage(
+                                                            image: const AssetImage('assets/images/wave.png'),
+                                                            fit: BoxFit.cover,
+                                                            colorFilter: ColorFilter.mode(
+                                                              Colors.white.withOpacity(0.4),
+                                                              BlendMode.dstATop,
+                                                            ),
                                                           ),
-                                                        ],
+                                                          borderRadius: BorderRadius.circular(14),
+                                                          border: Border.all(
+                                                            color: designBorderColor,
+                                                            width: 1.5,
+                                                          ),
+                                                          boxShadow: [
+                                                            BoxShadow(
+                                                              color: Colors.black.withOpacity(0.06),
+                                                              blurRadius: 10,
+                                                              offset: const Offset(0, 4),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                                                        // 👇 Wrap with SingleChildScrollView inside the card
+                                                        // to prevent yellow/black strip overflows if content spikes!
+                                                        child: SingleChildScrollView(
+                                                          physics: const NeverScrollableScrollPhysics(), // Keeps it clean unless overflowing
+                                                          child: Center(
+                                                            child: buildCardContent(index),
+                                                          ),
+                                                        ),
                                                       ),
-                                                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                                                      child: Center(
-                                                        child: buildCardContent(index),
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
+                                                    );
+                                                  },
+                                                ),
                                               ),
                                             ),
 
@@ -3254,7 +3310,7 @@ class _MapScreenState extends State<MapScreen> {
                                                 mainAxisSize: MainAxisSize.min,
                                                 mainAxisAlignment: MainAxisAlignment.center,
                                                 children: List.generate(
-                                                  cardCount,
+                                                  _carouselCardCount,
                                                       (dotIndex) => AnimatedContainer(
                                                     duration: const Duration(milliseconds: 250),
                                                     margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -3273,6 +3329,7 @@ class _MapScreenState extends State<MapScreen> {
                                       },
                                     ),
                                   ),
+
                                   const SizedBox(height: 30),
                                   const Divider(
                                     color: Colors.grey,

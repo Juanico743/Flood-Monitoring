@@ -67,8 +67,8 @@ Widget buildCardContent(int index) {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'AvenirNext',
-                fontSize: 11,
-                color: Colors.grey.shade600,
+                fontSize: 12,
+                color: Colors.black87,
                 height: 1.35,
               ),
             ),
@@ -115,9 +115,9 @@ Widget _buildCardHeader(String text) {
         style: const TextStyle(
           fontFamily: 'AvenirNext',
           fontWeight: FontWeight.w900,
-          fontSize: 13,
+          fontSize: 15,
           letterSpacing: 1.0,
-          color: Color(0xff2c3e50),
+          color: Colors.blueAccent,
         ),
       ),
       const SizedBox(height: 4),
@@ -147,7 +147,7 @@ Widget _buildRowItem({required String imagePath, required String title, required
           width: 34,
           height: 34,
           decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
-          child: const Icon(Icons.location_on, size: 16, color: Colors.black26),
+          child: const Icon(Icons.location_on, size: 18, color: Colors.black26),
         ),
       ),
       const SizedBox(width: 14),
@@ -161,9 +161,9 @@ Widget _buildRowItem({required String imagePath, required String title, required
               style: TextStyle(
                 fontFamily: 'AvenirNext',
                 fontWeight: FontWeight.w800,
-                fontSize: 12.5,
+                fontSize: 13,
                 letterSpacing: 0.2,
-                color: Colors.black87,
+                color: Colors.black,
               ),
             ),
             const SizedBox(height: 1),
@@ -172,8 +172,8 @@ Widget _buildRowItem({required String imagePath, required String title, required
               style: TextStyle(
                 fontFamily: 'AvenirNext',
                 fontWeight: FontWeight.w500,
-                fontSize: 11,
-                color: Colors.grey.shade500,
+                fontSize: 12,
+                color: Colors.black87,
               ),
             ),
           ],
@@ -187,7 +187,7 @@ Widget _buildRowItem({required String imagePath, required String title, required
 Widget _buildVehicleItem(String imagePath) {
   return Container(
     width: 52,
-    height: 38,
+    height: 52,
     decoration: BoxDecoration(
       color: const Color(0xfff2f9fe), // Soft background tint to ground vehicle images
       borderRadius: BorderRadius.circular(8),
