@@ -152,9 +152,12 @@ class _MapScreenState extends State<MapScreen> {
   int currentMenuCardPage = 0;
 
   bool useOpenFreeMapStyle = false;
-  late PageController _carouselController;
+  PageController _carouselController = PageController(initialPage: 0);
   Timer? _carouselTimer;
   final int _carouselCardCount = 3;
+
+  bool vehicleConfirmed = false;
+  bool _isFirstLocationLoad = true;
 
   // ========================================
   // INITIALIZATION (initState)
@@ -208,7 +211,7 @@ class _MapScreenState extends State<MapScreen> {
       });
     }
 
-    _carouselController = PageController(initialPage: 0);
+
     _startCarouselTimer();
   }
 
@@ -339,6 +342,11 @@ class _MapScreenState extends State<MapScreen> {
       setState(() => currentPosition = lastKnown);
       _addUserMarker();
       getWeather();
+
+      if (_isFirstLocationLoad) {
+        _isFirstLocationLoad = false;
+        _goToUser();
+      }
     }
 
     try {
@@ -352,10 +360,16 @@ class _MapScreenState extends State<MapScreen> {
         _addUserMarker();
         getWeather();
         print("currentPosition: $currentPosition");
+
+        if (_isFirstLocationLoad) {
+          _isFirstLocationLoad = false;
+          _goToUser();
+        }
       }
     } catch (e) {
       print('Fresh location timeout or error: $e');
     }
+
   }
 
   /// ----- UPDATE TIME -----
@@ -477,7 +491,7 @@ class _MapScreenState extends State<MapScreen> {
 
   void insideFloodZone() {
     if (selectedVehicle.isEmpty) return;
-    if (!insideAlertZone) {
+    if (!insideAlertZone && vehicleConfirmed) {
       showAlertModal(context);
       setState(() {
         insideAlertZone = true;
@@ -2151,7 +2165,9 @@ class _MapScreenState extends State<MapScreen> {
                                 _infoRow("Sensor ID", selectedSensorId ?? "-"),
                                 _infoRow(
                                   "Location",
-                                  location.length > 12 ? '${location.substring(0, 12)}...' : location,
+                                  location == null
+                                      ? "Loading..." // What to show if location is null
+                                      : (location.length > 12 ? '${location.substring(0, 12)}...' : location),
                                 ),
                                 _infoRow(
                                     "Flood Height",
@@ -2892,6 +2908,8 @@ class _MapScreenState extends State<MapScreen> {
                                                   selectedVehicle = 'Walk';
                                                   showMainSheet = false;
                                                   showDirectionSheet = true;
+
+                                                  vehicleConfirmed = true;
                                                   _goToUser();
                                                   fetchDataForAllSensors();
                                                 });
@@ -2922,6 +2940,8 @@ class _MapScreenState extends State<MapScreen> {
                                                   selectedVehicle = 'Bicycle';
                                                   showMainSheet = false;
                                                   showDirectionSheet = true;
+
+                                                  vehicleConfirmed = true;
                                                   _goToUser();
                                                   fetchDataForAllSensors();
                                                 });
@@ -2952,6 +2972,8 @@ class _MapScreenState extends State<MapScreen> {
                                                   selectedVehicle = 'Motorcycle';
                                                   showMainSheet = false;
                                                   showDirectionSheet = true;
+
+                                                  vehicleConfirmed = true;
                                                   _goToUser();
                                                   fetchDataForAllSensors();
                                                 });
@@ -2981,6 +3003,8 @@ class _MapScreenState extends State<MapScreen> {
                                                   selectedVehicle = 'Car';
                                                   showMainSheet = false;
                                                   showDirectionSheet = true;
+
+                                                  vehicleConfirmed = true;
                                                   _goToUser();
                                                   fetchDataForAllSensors();
                                                 });
@@ -3010,6 +3034,8 @@ class _MapScreenState extends State<MapScreen> {
                                                   selectedVehicle = 'Truck';
                                                   showMainSheet = false;
                                                   showDirectionSheet = true;
+
+                                                  vehicleConfirmed = true;
                                                   _goToUser();
                                                   fetchDataForAllSensors();
                                                 });
